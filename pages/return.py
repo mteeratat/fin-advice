@@ -1,10 +1,10 @@
 import yfinance as yf
-from dash import Dash, html, dcc, Input, Output, State, ctx
+from dash import Dash, html, dcc, Input, Output, State, ctx, register_page, callback
 import pandas as pd
 import plotly.express as px
 from indicator.ma import SMA, EMA
 
-app = Dash(__name__)
+ret = register_page(__name__)
 
 ptt = yf.Ticker('ptt.bk')
 data = ptt.history(interval='1d', period='1y')
@@ -15,25 +15,20 @@ close = data[['Close']]
 # print(close)
 fig = px.line(close, title='PTT')
 
-app.layout = html.Div(children=[
-    html.H1(children='Hello Dashyyyyyy'),
-
-    html.Div(children='''
-        Dash: A web application framework for your data.
-    '''),
+layout = html.Div(children=[
+    html.H1(children='Return'),
 
     dcc.Graph(
         id='example-graph',
         figure=fig
     ),
-    # html.Div(id='example-graph'),
 
     html.Button('SMA', id='btn1', n_clicks=0),
     html.Button('EMA', id='btn2', n_clicks=0),
     html.Div(id='change'),
 ])
 
-@app.callback(
+@callback(
     # Output('change', 'children'),
     Output('example-graph', 'figure'),
     Input('btn1', 'n_clicks'),
@@ -54,8 +49,5 @@ def change_indicator(btn1, btn2):
         fig = px.line(price, title='PTT')
     # print(price)
     # print(msg)
-    print(fig)
+    # print(fig)
     return fig
-
-if __name__ == '__main__':
-    app.run_server(debug=True)
