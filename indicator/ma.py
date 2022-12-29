@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 def SMA(df_price):
-    data = df_price.rolling(20).mean()
+    data = df_price.rolling(5).mean()
     # print(data)
     # print(data)
     # print(data['Close'])
@@ -11,16 +11,16 @@ def SMA(df_price):
 
 def EMA(df_price):
     ema = []
-    for i in df_price['Close'][:19]:
+    for i in df_price['Close'][:4]:
         ema.append(np.NaN)
-        # print(df_price[:20].mean()[0])
-        # print(type(df_price[:20].mean()[0]))
-    ema.append(df_price[:20].mean()[0])
-    for i in df_price['Close'][20:]:
+        # print(df_price[:5].mean()[0])
+        # print(type(df_price[:5].mean()[0]))
+    ema.append(df_price[:5].mean()[0])
+    for i in df_price['Close'][5:]:
         # print(i)
         # print(type(i))
         # print(ema[-1])
-        ema.append(i*2/(1+20) + ema[-1]*(1-2/(1+20)))
+        ema.append(i*2/(1+5) + ema[-1]*(1-2/(1+5)))
     # print(ema)
     ema = pd.Series(ema).T
     # print(ema)
