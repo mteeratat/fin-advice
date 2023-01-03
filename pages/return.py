@@ -11,7 +11,7 @@ ptt = yf.Ticker('ptt.bk')
 data = ptt.history(interval='1wk', period='1y')
 close = data[['Close']]
 port = pd.DataFrame(data=[100 for i in range(close.shape[0])], index=close.index)
-print(port)
+# print(port)
 
 fig = px.line(close, title='PTT')
 fig2 = px.line(port, title='PTT')
@@ -19,50 +19,54 @@ fig2 = px.line(port, title='PTT')
 layout = html.Div(children=[
     html.H1(children='Return'),
 
-    html.P(children='Initial money = 100 Baht', ),
-
     dcc.Graph(
         id='example-graph',
         figure=fig
     ),
+
+    html.P(children='Initial money = 100 Baht', ),
 
     dcc.Graph(
         id='example-graph2',
         figure=fig2
     ),
 
+    html.P(id='final', children='Final money = '),
+
     html.Button('SMA', id='btn1', n_clicks=0),
     html.Button('EMA', id='btn2', n_clicks=0),
-    # html.Div(id='change'),
 ])
 
 @callback(
-    # Output('change', 'children'),
     Output('example-graph', 'figure'),
     Output('example-graph2', 'figure'),
+    Output('final', 'children'),
     Input('btn1', 'n_clicks'),
     Input('btn2', 'n_clicks'),
 )
 def change_indicator(btn1, btn2):
     global close, port
     price = close
-    msg = 'Hello'
+    # msg = 'Hello'
     fig = px.line(price, title='PTT')
     fig2 = px.line(port, title='PTT')
     if 'btn1' == ctx.triggered_id:
-        msg = 'Button 1 pressed'
+        # msg = 'Button 1 pressed'
         price = price.assign(sma=SMA(data[['Close']]))
         fig = px.line(price, title='PTT')
-        fig2 = px.line(cross_return(price), title='PTT')
+        ret = cross_return(price)
+        fig2 = px.line(ret, title='PTT')
 
     if 'btn2' == ctx.triggered_id:
-        msg = 'Button 2 pressed'
+        # msg = 'Button 2 pressed'
         price = price.assign(ema=EMA(data[['Close']]))
         fig = px.line(price, title='PTT')
-        fig2 = px.line(cross_return(price), title='PTT')
+        ret = cross_return(price)
+        fig2 = px.line(ret, title='PTT')
+    
+    # print(ret.iloc[-1][0])
 
-    print()
-    return fig, fig2
+    return fig, fig2, f"Final money = {ret.iloc[-1][0]:.2f} Baht"
 
 def cross_return(price):
 
@@ -71,5 +75,6 @@ def cross_return(price):
     price['spend'] = price['Close'] * price['position']
     price['cash'] = 100 - price['spend'].cumsum()
     # print(price)
+    res = price[['cash']]
 
-    return price[['cash']]
+    return res
