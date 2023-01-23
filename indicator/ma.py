@@ -32,6 +32,6 @@ def EMA(df_price):
     # print(ema)
     # df_price.loc[:, 'Close'] = ema
     # print(df_price.index)
-    df_price['Close'] = ema
+    df_price['Close'] = ema.copy()
     # print(df_price)
     return df_price
