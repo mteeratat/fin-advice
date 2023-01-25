@@ -2,7 +2,8 @@ import yfinance as yf
 from dash import Dash, html, dcc, Input, Output, State, ctx, register_page, callback
 import pandas as pd
 import plotly.express as px
-from indicator.ma import SMA, EMA, bolband
+from indicator.ma_graph import SMA, EMA, bolband
+from indicator.ma_ret import cross_return, cross_bs, bol_return, bol_bs
 import numpy as np
 
 ret = register_page(__name__)
@@ -26,6 +27,7 @@ layout = html.Div(children=[
     html.Button('SMA', id='btn1', n_clicks=0),
     html.Button('EMA', id='btn2', n_clicks=0),
     html.Button('Boll', id='btn3', n_clicks=0),
+    html.Button('sup-res', id='btn4', n_clicks=0),
     
     html.P(children='Initial money = 100 Baht', ),
 
@@ -45,8 +47,9 @@ layout = html.Div(children=[
     Input('btn1', 'n_clicks'),
     Input('btn2', 'n_clicks'),
     Input('btn3', 'n_clicks'),
+    Input('btn4', 'n_clicks'),
 )
-def change_indicator(btn1, btn2, btn3):
+def change_indicator(btn1, btn2, btn3, btn4):
     global close, port
     price = close.copy()
     fig = px.line(price, title='PTT', markers=True)
@@ -107,51 +110,46 @@ def change_indicator(btn1, btn2, btn3):
         for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
 
+    if 'btn4' == ctx.triggered_id:
+        #sort_values() ไม่ได้ inplace
+        price = supres(price)
+        # print(price)
+        fig = px.line(price['Close'], title='PTT', markers=True)
+        fig['data'][0].line.color = '#636efa'
+        crit = price.loc[price['crit'] == 1]
+        # print(crit.shape)
+        for yy in crit['Close'] : fig.add_hline(y = yy, line_color="#ab63fa")
+
+
     return fig, fig2, f"Final money = {ret.iloc[-1][0]:.2f} Baht"
+    # return fig
 
+def supres(price):
+    temp = price[['Close']]
+    temp['crit'] = pd.Series(data=[1 for i in range(temp.shape[0])], index=temp.index)
+    days = 10
+    dif = temp.copy()
+    dif2 = temp.copy()
+    for i in range(days):
+        dif['fdiff'] = temp['Close'].diff(i)
+        dif['bdiff'] = temp['Close'].diff(-i)
+        # cut out -> use 'not' in loc
+        dif['crit'].loc[dif['fdiff']<0] = 0
+        dif['crit'].loc[dif['bdiff']<0] = 0
+    for i in range(days):
+        dif2['fdiff'] = temp['Close'].diff(i)
+        dif2['bdiff'] = temp['Close'].diff(-i)
+        # cut out -> use 'not' in loc
+        dif2['crit'].loc[dif2['fdiff']>0] = 0
+        dif2['crit'].loc[dif2['bdiff']>0] = 0
 
-def cross_pos(price):
-    price['signal'] = np.where(price.iloc[:, 0] < price.iloc[:, 1], 1.0, 0.0)
-    price['position'] = price['signal'].diff()
+    temp['crit'] = dif['crit'] + dif2['crit']
 
-    return price
+    # price = price.sort_values(by=['Close'])
+    # temp = price[['Close']].diff(5)
+    # temp['crit'] = np.where(temp.iloc[:, 0] < 0.3, 1.0, 0.0)
+    # temp = temp.sort_values(by=['Date'])
+    # price = price.sort_values(by=['Date'])
+    # price['crit'] = temp['crit']
 
-def cross_return(price):
-    price = cross_pos(price)
-    price['spend'] = price['Close'] * price['position']
-    price['cash'] = 100 - price['spend'].cumsum()
-
-    return price[['cash']]
-
-def cross_bs(price):
-    price = cross_pos(price)
-    price['b/s'] = pd.Series('-', index=price.index)
-    price['b/s'] = price['position'].apply(lambda x: 'buy' if x == 1 else ('sell' if x == -1 else '-'))
-
-    return price[['b/s']]
-
-def bol_pos(price):
-    # signal -> 0-middle, 1-below lband, 2-above uband
-    # position -> 0->1=1=buy, 1->0=-1=neutral, 0->2=2=sell, 2->0=-2=neutral
-    price['signal'] = np.where(price.iloc[:, 0] < price.iloc[:, 2], 1.0, np.where(price.iloc[:, 0] > price.iloc[:, 1], 2.0, 0.0))
-    price['position'] = price['signal'].diff()
-
-    return price
-
-def bol_return(price):
-    price = bol_pos(price)
-    bs = price[['position']]
-    bs.loc[bs['position']==-1] = 0
-    bs.loc[bs['position']==-2] = 0
-    bs.loc[bs['position']==2] = -1
-    price['spend'] = price['Close'] * bs['position']
-    price['cash'] = 100 - price['spend'].cumsum()
-
-    return price[['cash']]
-
-def bol_bs(price):
-    price = bol_pos(price)
-    price['b/s'] = pd.Series('-', index=price.index)
-    price['b/s'] = price['position'].apply(lambda x: 'buy' if x == 1 else ('sell' if x == 2 else '-'))
-
-    return price[['b/s']]
+    return temp
