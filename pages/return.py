@@ -32,20 +32,21 @@ layout = html.Div(children=[
     html.Button('Boll', id='btn3', n_clicks=0),
     html.Button('sup-res', id='btn4', n_clicks=0),
     
-    html.P(children='Initial money = 100 Baht', ),
+    html.P(id='init', title='Initial money', children=''),
 
     dcc.Graph(
         id='example-graph2',
         figure=fig2
     ),
 
-    html.P(id='final', children='Final money = '),
+    html.P(id='final', title='Final money', children=''),
 
 ])
 
 @callback(
     Output('example-graph', 'figure'),
     Output('example-graph2', 'figure'),
+    Output('init', 'children'),
     Output('final', 'children'),
     Input('btn1', 'n_clicks'),
     Input('btn2', 'n_clicks'),
@@ -60,7 +61,8 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
 
     fig = px.line(port, title='ticker', markers=True)
     fig2 = px.line(port, title='ticker', markers=True)
-    ret = port
+    last = "Final money : cash = 0, stocks values = 0, total = 0"
+    first = 'Initial money : 0'
 
     if 'search' == ctx.triggered_id:
         tick = yf.Ticker(ticker)
@@ -87,6 +89,9 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
 
+        last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        first = f"Initial money : {close['Close'].mean()*10:.2f}"
+
     if 'btn2' == ctx.triggered_id:
         price = price.assign(ema=EMA(price))
         fig = px.line(price[['Close', 'ema']], title=ticker, markers=True)
@@ -104,7 +109,10 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         for xx in sell.index : fig.add_vline(x = xx, line_color="#ef553b")
         for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
-    
+
+        last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        first = f"Initial money : {close['Close'].mean()*10:.2f}"
+
     if 'btn3' == ctx.triggered_id:
         bolband(price)
         # price = price.assign(uband=bol['uband'], lband=bol['lband'])
@@ -125,6 +133,9 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
 
+        last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        first = f"Initial money : {close['Close'].mean()*10:.2f}"
+
     if 'btn4' == ctx.triggered_id:
         #sort_values() ไม่ได้ inplace
         price = supres(price)
@@ -135,6 +146,5 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         # print(crit.shape)
         for yy in crit['Close'] : fig.add_hline(y = yy, line_color="#ab63fa")
 
-
-    return fig, fig2, f"Final money = {ret.iloc[-1][0]:.2f} Baht"
+    return fig, fig2, first, last
     # return fig

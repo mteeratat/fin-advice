@@ -10,7 +10,7 @@ def cross_pos(price):
 def cross_return(price):
     price = cross_pos(price)
     price['spend'] = price['Close'] * price['position']
-    price['cash'] = 100 - price['spend'].cumsum()
+    price['cash'] = price['Close'].mean()*10 - price['spend'].cumsum()
 
     return price[['cash']]
 
@@ -36,7 +36,7 @@ def bol_return(price):
     bs.loc[bs['position']==-2] = 0
     bs.loc[bs['position']==2] = -1
     price['spend'] = price['Close'] * bs['position']
-    price['cash'] = 100 - price['spend'].cumsum()
+    price['cash'] = price['Close'].mean()*10 - price['spend'].cumsum()
 
     return price[['cash']]
 
