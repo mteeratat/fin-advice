@@ -4,20 +4,23 @@ import pandas as pd
 import plotly.express as px
 from indicator.ma_graph import SMA, EMA, bolband
 from indicator.ma_ret import cross_return, cross_bs, bol_return, bol_bs
+from indicator.sup_res import supres
 import numpy as np
 
 ret = register_page(__name__)
 
-ptt = yf.Ticker('ptt.bk')
-data = ptt.history(interval='1wk', period='1y')
-close = data[['Close']]
-port = pd.DataFrame(data=[100 for i in range(close.shape[0])], index=close.index)
+close = pd.DataFrame()
+port = pd.DataFrame(data=[100 for i in range(100)])
 
-fig = px.line(close, title='PTT', markers=True)
-fig2 = px.line(port, title='PTT', markers=True)
+fig = px.line(port, title='ticker', markers=True)
+fig2 = px.line(port, title='ticker', markers=True)
 
 layout = html.Div(children=[
     html.H1(children='Return'),
+
+    dcc.Input(id='ticker', debounce=True),
+    html.Button('Search', id='search', n_clicks=0),
+    dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup',style={'textAlign': 'center','font-size':'0.7vw'}),
 
     dcc.Graph(
         id='example-graph',
@@ -48,20 +51,32 @@ layout = html.Div(children=[
     Input('btn2', 'n_clicks'),
     Input('btn3', 'n_clicks'),
     Input('btn4', 'n_clicks'),
+    Input('ticker', 'value'), 
+    Input('search', 'n_clicks'),
 )
-def change_indicator(btn1, btn2, btn3, btn4):
+def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
     global close, port
     price = close.copy()
-    fig = px.line(price, title='PTT', markers=True)
-    fig2 = px.line(port, title='PTT', markers=True)
+
+    fig = px.line(port, title='ticker', markers=True)
+    fig2 = px.line(port, title='ticker', markers=True)
+    ret = port
+
+    if 'search' == ctx.triggered_id:
+        tick = yf.Ticker(ticker)
+        data = tick.history(interval='1wk', period='1y')
+        close = data[['Close']]
+
+        fig = px.line(close, title=ticker, markers=True)
+
     if 'btn1' == ctx.triggered_id:
-        price = price.assign(sma=SMA(data[['Close']]))
-        fig = px.line(price, title='PTT', markers=True)
+        price = price.assign(sma=SMA(price))
+        fig = px.line(price, title=ticker, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
 
         ret = cross_return(price)
-        fig2 = px.line(ret, title='PTT', markers=True)
+        fig2 = px.line(ret, title=ticker, markers=True)
 
         # price = price.assign(bs=cross_bs(price))
         cross_bs(price)
@@ -73,13 +88,13 @@ def change_indicator(btn1, btn2, btn3, btn4):
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
 
     if 'btn2' == ctx.triggered_id:
-        price = price.assign(ema=EMA(data[['Close']]))
-        fig = px.line(price[['Close', 'ema']], title='PTT', markers=True)
+        price = price.assign(ema=EMA(price))
+        fig = px.line(price[['Close', 'ema']], title=ticker, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
 
         ret = cross_return(price)
-        fig2 = px.line(ret, title='PTT', markers=True)
+        fig2 = px.line(ret, title=ticker, markers=True)
 
         # price = price.assign(bs=cross_bs(price))
         cross_bs(price)
@@ -93,13 +108,13 @@ def change_indicator(btn1, btn2, btn3, btn4):
     if 'btn3' == ctx.triggered_id:
         bolband(price)
         # price = price.assign(uband=bol['uband'], lband=bol['lband'])
-        fig = px.line(price, title='PTT', markers=True)
+        fig = px.line(price, title=ticker, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
         fig['data'][2].line.color = '#ab63fa'
 
         ret = bol_return(price)
-        fig2 = px.line(ret, title='PTT', markers=True)
+        fig2 = px.line(ret, title=ticker, markers=True)
 
         # price = price.assign(bs=bol_pos_bs(price))
         bol_bs(price)
@@ -114,7 +129,7 @@ def change_indicator(btn1, btn2, btn3, btn4):
         #sort_values() ไม่ได้ inplace
         price = supres(price)
         # print(price)
-        fig = px.line(price['Close'], title='PTT', markers=True)
+        fig = px.line(price['Close'], title=ticker, markers=True)
         fig['data'][0].line.color = '#636efa'
         crit = price.loc[price['crit'] == 1]
         # print(crit.shape)
@@ -123,33 +138,3 @@ def change_indicator(btn1, btn2, btn3, btn4):
 
     return fig, fig2, f"Final money = {ret.iloc[-1][0]:.2f} Baht"
     # return fig
-
-def supres(price):
-    temp = price[['Close']]
-    temp['crit'] = pd.Series(data=[1 for i in range(temp.shape[0])], index=temp.index)
-    days = 10
-    dif = temp.copy()
-    dif2 = temp.copy()
-    for i in range(days):
-        dif['fdiff'] = temp['Close'].diff(i)
-        dif['bdiff'] = temp['Close'].diff(-i)
-        # cut out -> use 'not' in loc
-        dif['crit'].loc[dif['fdiff']<0] = 0
-        dif['crit'].loc[dif['bdiff']<0] = 0
-    for i in range(days):
-        dif2['fdiff'] = temp['Close'].diff(i)
-        dif2['bdiff'] = temp['Close'].diff(-i)
-        # cut out -> use 'not' in loc
-        dif2['crit'].loc[dif2['fdiff']>0] = 0
-        dif2['crit'].loc[dif2['bdiff']>0] = 0
-
-    temp['crit'] = dif['crit'] + dif2['crit']
-
-    # price = price.sort_values(by=['Close'])
-    # temp = price[['Close']].diff(5)
-    # temp['crit'] = np.where(temp.iloc[:, 0] < 0.3, 1.0, 0.0)
-    # temp = temp.sort_values(by=['Date'])
-    # price = price.sort_values(by=['Date'])
-    # price['crit'] = temp['crit']
-
-    return temp
