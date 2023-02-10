@@ -18,18 +18,45 @@ fig2 = px.line(port, title='ticker', markers=True)
 layout = html.Div(children=[
     html.H1(children='Return'),
 
-    dcc.Input(id='ticker', debounce=True),
-    html.Button('Search', id='search', n_clicks=0),
-    dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup',style={'textAlign': 'center','font-size':'0.7vw'}),
+    html.Div(
+        style={'display' : 'flex'}, 
+        children=[
+            dcc.Input(id='ticker', debounce=True, placeholder='Ticker'),
+            html.Button('Search', id='search', n_clicks=0),
+            dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup',style={'textAlign': 'center','font-size':'0.7vw'}),
+        ],
+    ),
 
     dcc.Graph(
         id='example-graph',
         figure=fig
     ),
 
-    html.Button('SMA', id='btn1', n_clicks=0),
-    html.Button('EMA', id='btn2', n_clicks=0),
-    html.Button('Boll', id='btn3', n_clicks=0),
+    html.Div(
+        style={'display' : 'flex'}, 
+        children=[
+            dcc.Input(id='sma_input', debounce=True, placeholder='SMA days to compute'),
+            html.Button('SMA', id='btn1', n_clicks=0),
+        ],
+    ),
+
+    html.Div(
+        style={'display' : 'flex'}, 
+        children=[
+            dcc.Input(id='ema_input', debounce=True, placeholder='EMA days to compute'),
+            html.Button('EMA', id='btn2', n_clicks=0),
+        ],
+    ),
+
+    html.Div(
+        style={'display' : 'flex'}, 
+        children=[
+            dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days to compute'),
+            dcc.Input(id='boll_input2', debounce=True, placeholder='std factor'),
+            html.Button('Boll', id='btn3', n_clicks=0),
+        ],
+    ),
+    
     html.Button('sup-res', id='btn4', n_clicks=0),
     
     html.P(id='init', title='Initial money', children=''),
@@ -54,8 +81,12 @@ layout = html.Div(children=[
     Input('btn4', 'n_clicks'),
     Input('ticker', 'value'), 
     Input('search', 'n_clicks'),
+    Input('sma_input', 'value'),
+    Input('ema_input', 'value'),
+    Input('boll_input1', 'value'),
+    Input('boll_input2', 'value'),
 )
-def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
+def change_indicator(btn1, btn2, btn3, btn4, ticker, search, sma_input, ema_input, boll_input1, boll_input2,):
     global close, port
     price = close.copy()
 
@@ -72,7 +103,7 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         fig = px.line(close, title=ticker, markers=True)
 
     if 'btn1' == ctx.triggered_id:
-        price = price.assign(sma=SMA(price))
+        price = price.assign(sma=SMA(price,sma_input))
         fig = px.line(price, title=ticker, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
@@ -96,7 +127,7 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
     if 'btn2' == ctx.triggered_id:
-        price = price.assign(ema=EMA(price))
+        price = price.assign(ema=EMA(price,ema_input))
         fig = px.line(price[['Close', 'ema']], title=ticker, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
@@ -120,7 +151,7 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
     if 'btn3' == ctx.triggered_id:
-        bolband(price)
+        bolband(price,boll_input1,boll_input2)
         # price = price.assign(uband=bol['uband'], lband=bol['lband'])
         fig = px.line(price, title=ticker, markers=True)
         fig['data'][0].line.color = '#636efa'
