@@ -25,3 +25,6 @@ def bolband(price):
     price['lband'] = pd.DataFrame(sma - factor*std)
 
     return price
+
+def APO(price):
+    print('x')

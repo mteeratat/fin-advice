@@ -89,7 +89,10 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
 
-        last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        if buy.shape[0] == sell.shape[0]:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = 0, total = {ret.iloc[-1][0]:.2f}"    
+        elif buy.shape[0]-sell.shape[0] == 1:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
     if 'btn2' == ctx.triggered_id:
@@ -110,7 +113,10 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
 
-        last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        if buy.shape[0] == sell.shape[0]:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = 0, total = {ret.iloc[-1][0]:.2f}"    
+        elif buy.shape[0]-sell.shape[0] == 1:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
     if 'btn3' == ctx.triggered_id:
@@ -133,7 +139,10 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search):
         for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
         for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
 
-        last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        if buy.shape[0] == sell.shape[0]:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = 0, total = {ret.iloc[-1][0]:.2f}"    
+        elif buy.shape[0]-sell.shape[0] == 1:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
     if 'btn4' == ctx.triggered_id:
