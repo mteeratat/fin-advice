@@ -22,8 +22,26 @@ layout = html.Div(children=[
         style={'display' : 'flex'}, 
         children=[
             dcc.Input(id='ticker', debounce=True, placeholder='Ticker'),
-            html.Button('Search', id='search', n_clicks=0),
             dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup',style={'textAlign': 'center','font-size':'0.7vw'}),
+            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo'),
+        ],
+    ),
+
+    html.Div(
+        style={'display' : 'flex'}, 
+        children=[
+            
+            dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max'),
+            html.Button('Get Data', id='get_data1', n_clicks=0),
+        ],
+    ),
+
+    html.Div(
+        style={'display' : 'flex'}, 
+        children=[
+            dcc.Input(id='start', debounce=True, placeholder='start:YYYY-MM-DD'),
+            dcc.Input(id='end', debounce=True, placeholder='end:YYYY-MM-DD'),
+            html.Button('Get Data', id='get_data2', n_clicks=0),
         ],
     ),
 
@@ -35,7 +53,7 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='sma_input', debounce=True, placeholder='SMA days to compute'),
+            dcc.Input(id='sma_input', debounce=True, placeholder='SMA days'),
             html.Button('SMA', id='btn1', n_clicks=0),
         ],
     ),
@@ -43,7 +61,7 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='ema_input', debounce=True, placeholder='EMA days to compute'),
+            dcc.Input(id='ema_input', debounce=True, placeholder='EMA days'),
             html.Button('EMA', id='btn2', n_clicks=0),
         ],
     ),
@@ -51,7 +69,7 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days to compute'),
+            dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days'),
             dcc.Input(id='boll_input2', debounce=True, placeholder='std factor'),
             html.Button('Boll', id='btn3', n_clicks=0),
         ],
@@ -80,13 +98,18 @@ layout = html.Div(children=[
     Input('btn3', 'n_clicks'),
     Input('btn4', 'n_clicks'),
     Input('ticker', 'value'), 
-    Input('search', 'n_clicks'),
+    Input('interval', 'value'), 
+    Input('period', 'value'), 
+    Input('get_data1', 'n_clicks'),
+    Input('start', 'value'), 
+    Input('end', 'value'), 
+    Input('get_data2', 'n_clicks'),
     Input('sma_input', 'value'),
     Input('ema_input', 'value'),
     Input('boll_input1', 'value'),
     Input('boll_input2', 'value'),
 )
-def change_indicator(btn1, btn2, btn3, btn4, ticker, search, sma_input, ema_input, boll_input1, boll_input2,):
+def change_indicator(btn1, btn2, btn3, btn4, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, boll_input2,):
     global close, port
     price = close.copy()
 
@@ -95,9 +118,16 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, search, sma_input, ema_inpu
     last = "Final money : cash = 0, stocks values = 0, total = 0"
     first = 'Initial money : 0'
 
-    if 'search' == ctx.triggered_id:
+    if 'get_data1' == ctx.triggered_id:
         tick = yf.Ticker(ticker)
-        data = tick.history(interval='1wk', period='1y')
+        data = tick.history(interval=interval, period=period)
+        close = data[['Close']]
+
+        fig = px.line(close, title=ticker, markers=True)
+    
+    if 'get_data2' == ctx.triggered_id:
+        tick = yf.Ticker(ticker)
+        data = tick.history(interval=interval, start=start, end=end)
         close = data[['Close']]
 
         fig = px.line(close, title=ticker, markers=True)
