@@ -16,27 +16,32 @@ fig = px.line(port, title='ticker', markers=True)
 fig2 = px.line(port, title='ticker', markers=True)
 
 #color: https://plotly.com/python/discrete-color/
+#display: https://developer.mozilla.org/en-US/docs/Web/CSS/display
+
 layout = html.Div(children=[
     html.H1(children='Return'),
 
     html.Div(
-        style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='ticker', debounce=True, placeholder='Ticker'),
-            dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup',style={'textAlign': 'center','font-size':'0.7vw'}),
-            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo'),
+            dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True,),
+            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True,),
         ],
     ),
+    
+    dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup',style={'textAlign': 'center','font-size':'0.7vw'}),
+
+    html.P(),
 
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            
             dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max'),
             html.Button('Get Data', id='get_data1', n_clicks=0),
         ],
     ),
 
+    html.P('or'),
+    
     html.Div(
         style={'display' : 'flex'}, 
         children=[
@@ -52,40 +57,46 @@ layout = html.Div(children=[
     ),
 
     html.Div(
-        style={'display' : 'flex'}, 
+        id='indicator',
+        style={'display' : 'block'}, 
         children=[
-            dcc.Input(id='sma_input', debounce=True, placeholder='SMA days'),
-            html.Button('SMA', id='btn1', n_clicks=0),
-        ],
+            html.Div(
+                style={'display' : 'block'}, 
+                children=[
+                    dcc.Link('Simple Moving Average', href='https://www.investopedia.com/terms/s/sma.asp',style={'textAlign': 'center','font-size':'vw'}),
+                    dcc.Input(id='sma_input', debounce=True, placeholder='SMA days'),
+                    html.Button('SMA', id='btn1', n_clicks=0),
+                ],
+            ),
+            html.Div(
+                style={'display' : 'block'}, 
+                children=[
+                    dcc.Link('Exponential Moving Average', href='https://www.investopedia.com/terms/e/ema.asp',style={'textAlign': 'center','font-size':'vw'}),
+                    dcc.Input(id='ema_input', debounce=True, placeholder='EMA days'),
+                    html.Button('EMA', id='btn2', n_clicks=0),
+                ],
+            ),
+            html.Div(
+                style={'display' : 'block'}, 
+                children=[
+                    dcc.Link('Absolute Price Oscillator', href='https://www.marketvolume.com/technicalanalysis/apo.asp',style={'textAlign': 'center','font-size':'vw'}),
+                    dcc.Input(id='apo_input1', debounce=True, placeholder='shorter SMA days'),
+                    dcc.Input(id='apo_input2', debounce=True, placeholder='longer SMA days'),
+                    html.Button('APO', id='btn5', n_clicks=0),
+                ],
+            ),
+            html.Div(
+                style={'display' : 'block'}, 
+                children=[
+                    dcc.Link('Bollinger Band', href='https://www.investopedia.com/terms/b/bollingerbands.asp',style={'textAlign': 'center','font-size':'vw'}),
+                    dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days'),
+                    dcc.Input(id='boll_input2', debounce=True, placeholder='std factor'),
+                    html.Button('Boll', id='btn3', n_clicks=0),
+                ],
+            ),
+            html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'inline-block'}, ),
+        ]
     ),
-
-    html.Div(
-        style={'display' : 'flex'}, 
-        children=[
-            dcc.Input(id='ema_input', debounce=True, placeholder='EMA days'),
-            html.Button('EMA', id='btn2', n_clicks=0),
-        ],
-    ),
-
-    html.Div(
-        style={'display' : 'flex'}, 
-        children=[
-            dcc.Input(id='apo_input1', debounce=True, placeholder='SMA1 days'),
-            dcc.Input(id='apo_input2', debounce=True, placeholder='SMA2 days'),
-            html.Button('APO', id='btn5', n_clicks=0),
-        ],
-    ),
-
-    html.Div(
-        style={'display' : 'flex'}, 
-        children=[
-            dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days'),
-            dcc.Input(id='boll_input2', debounce=True, placeholder='std factor'),
-            html.Button('Boll', id='btn3', n_clicks=0),
-        ],
-    ),
-    
-    html.Button('sup-res', id='btn4', n_clicks=0),
     
     html.P(id='init', title='Initial money', children=''),
 
