@@ -15,6 +15,7 @@ port = pd.DataFrame(data=[100 for i in range(100)])
 fig = px.line(port, title='ticker', markers=True)
 fig2 = px.line(port, title='ticker', markers=True)
 
+#color: https://plotly.com/python/discrete-color/
 layout = html.Div(children=[
     html.H1(children='Return'),
 
@@ -69,6 +70,15 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
+            dcc.Input(id='apo_input1', debounce=True, placeholder='SMA1 days'),
+            dcc.Input(id='apo_input2', debounce=True, placeholder='SMA2 days'),
+            html.Button('APO', id='btn5', n_clicks=0),
+        ],
+    ),
+
+    html.Div(
+        style={'display' : 'flex'}, 
+        children=[
             dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days'),
             dcc.Input(id='boll_input2', debounce=True, placeholder='std factor'),
             html.Button('Boll', id='btn3', n_clicks=0),
@@ -97,6 +107,7 @@ layout = html.Div(children=[
     Input('btn2', 'n_clicks'),
     Input('btn3', 'n_clicks'),
     Input('btn4', 'n_clicks'),
+    Input('btn5', 'n_clicks'),
     Input('ticker', 'value'), 
     Input('interval', 'value'), 
     Input('period', 'value'), 
@@ -108,8 +119,11 @@ layout = html.Div(children=[
     Input('ema_input', 'value'),
     Input('boll_input1', 'value'),
     Input('boll_input2', 'value'),
+    Input('apo_input1', 'value'),
+    Input('apo_input2', 'value'),
 )
-def change_indicator(btn1, btn2, btn3, btn4, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, boll_input2,):
+def change_indicator(btn1, btn2, btn3, btn4, btn5, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, 
+boll_input2, apo_input1, apo_input2):
     global close, port
     price = close.copy()
 
@@ -138,11 +152,11 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, interval, period, get_data1
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
 
-        ret = cross_return(price)
+        ret = cross_return(price,0,1)
         fig2 = px.line(ret, title=ticker, markers=True)
 
         # price = price.assign(bs=cross_bs(price))
-        cross_bs(price)
+        cross_bs(price,0,1)
         buy = price.loc[price['b/s'] == 'buy']
         for xx in buy.index : fig.add_vline(x = xx, line_color="#00cc96")
         sell = price.loc[price['b/s'] == 'sell']
@@ -162,11 +176,37 @@ def change_indicator(btn1, btn2, btn3, btn4, ticker, interval, period, get_data1
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
 
-        ret = cross_return(price)
+        ret = cross_return(price,0,1)
         fig2 = px.line(ret, title=ticker, markers=True)
 
         # price = price.assign(bs=cross_bs(price))
-        cross_bs(price)
+        cross_bs(price,0,1)
+        buy = price.loc[price['b/s'] == 'buy']
+        for xx in buy.index : fig.add_vline(x = xx, line_color="#00cc96")
+        sell = price.loc[price['b/s'] == 'sell']
+        for xx in sell.index : fig.add_vline(x = xx, line_color="#ef553b")
+        for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
+        for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
+
+        if buy.shape[0] == sell.shape[0]:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = 0, total = {ret.iloc[-1][0]:.2f}"    
+        elif buy.shape[0]-sell.shape[0] == 1:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        first = f"Initial money : {close['Close'].mean()*10:.2f}"
+
+    if 'btn5' == ctx.triggered_id:
+        price = price.assign(sma1=SMA(price,apo_input1))
+        price = price.assign(sma2=SMA(price['Close'],apo_input2))
+        fig = px.line(price, title=ticker, markers=True)
+        fig['data'][0].line.color = '#636efa'
+        fig['data'][1].line.color = '#ab63fa'
+        fig['data'][2].line.color = '#ff97ff'
+
+        ret = cross_return(price,1,2)
+        fig2 = px.line(ret, title=ticker, markers=True)
+
+        # price = price.assign(bs=cross_bs(price))
+        cross_bs(price,1,2)
         buy = price.loc[price['b/s'] == 'buy']
         for xx in buy.index : fig.add_vline(x = xx, line_color="#00cc96")
         sell = price.loc[price['b/s'] == 'sell']
