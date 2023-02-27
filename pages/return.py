@@ -6,6 +6,8 @@ from indicator.ma_graph import SMA, EMA, bolband
 from indicator.ma_ret import cross_return, cross_bs, bol_return, bol_bs
 from indicator.sup_res import supres
 import numpy as np
+import base64
+import io
 
 ret = register_page(__name__)
 
@@ -17,6 +19,8 @@ fig2 = px.line(port, title='ticker', markers=True)
 
 #color: https://plotly.com/python/discrete-color/
 #display: https://developer.mozilla.org/en-US/docs/Web/CSS/display
+
+name = 'ticker'
 
 layout = html.Div(children=[
     html.H1(children='Return'),
@@ -51,10 +55,18 @@ layout = html.Div(children=[
         ],
     ),
 
+    html.P('or'),
+
+    dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
+    # html.Div(id='upload_output', children=''),
+
     dcc.Graph(
         id='example-graph',
         figure=fig
     ),
+
+    html.Button('Download File (CSV)', id='download_btn'),
+    dcc.Download(id='download'),
 
     html.Div(
         id='indicator',
@@ -132,14 +144,17 @@ layout = html.Div(children=[
     Input('boll_input2', 'value'),
     Input('apo_input1', 'value'),
     Input('apo_input2', 'value'),
+    Input('upload', 'contents'),
+    Input('upload', 'filename'),
 )
 def change_indicator(btn1, btn2, btn3, btn4, btn5, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, 
-boll_input2, apo_input1, apo_input2):
-    global close, port
+boll_input2, apo_input1, apo_input2, contents, filename):
+    global close, port, name
     price = close.copy()
 
-    fig = px.line(port, title='ticker', markers=True)
-    fig2 = px.line(port, title='ticker', markers=True)
+    # print(ctx.triggered_id)
+    fig = px.line(port, title=name, markers=True)
+    fig2 = px.line(port, title=name, markers=True)
     last = "Final money : cash = 0, stocks values = 0, total = 0"
     first = 'Initial money : 0'
 
@@ -148,23 +163,48 @@ boll_input2, apo_input1, apo_input2):
         data = tick.history(interval=interval, period=period)
         close = data[['Close']]
 
-        fig = px.line(close, title=ticker, markers=True)
+        name = ticker
+        fig = px.line(close, title=name, markers=True)
     
     if 'get_data2' == ctx.triggered_id:
         tick = yf.Ticker(ticker)
         data = tick.history(interval=interval, start=start, end=end)
         close = data[['Close']]
 
-        fig = px.line(close, title=ticker, markers=True)
+        name = ticker
+        fig = px.line(close, title=name, markers=True)
 
+    if 'upload' == ctx.triggered_id:
+        # content_type, content_string = contents.split(',')
+        # decoded = base64.b64decode(content_string)
+        # filenames = io.StringIO(decoded.decode('utf-8'))
+        try:
+            if 'csv' in filename:
+                # Assume that the user uploaded a CSV file
+                content_type, content_string = contents.split(',')
+                decoded = base64.b64decode(content_string)
+                filenames = io.StringIO(decoded.decode('utf-8'))
+
+                data = pd.read_csv(filenames)
+                close = data[['Close']]
+
+                name = filename
+                fig = px.line(close, title=name, markers=True)
+            else:
+                print('Error: Only CSV files are supported')
+                
+        except Exception as e:
+            print(e)
+            print('There was an error processing this file.')
+        
     if 'btn1' == ctx.triggered_id:
         price = price.assign(sma=SMA(price,sma_input))
-        fig = px.line(price, title=ticker, markers=True)
+        fig = px.line(price, title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
 
         ret = cross_return(price,0,1)
-        fig2 = px.line(ret, title=ticker, markers=True)
+        fig2 = px.line(ret, title=name, markers=True)
 
         # price = price.assign(bs=cross_bs(price))
         cross_bs(price,0,1)
@@ -183,12 +223,12 @@ boll_input2, apo_input1, apo_input2):
 
     if 'btn2' == ctx.triggered_id:
         price = price.assign(ema=EMA(price,ema_input))
-        fig = px.line(price[['Close', 'ema']], title=ticker, markers=True)
+        fig = px.line(price[['Close', 'ema']], title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
 
         ret = cross_return(price,0,1)
-        fig2 = px.line(ret, title=ticker, markers=True)
+        fig2 = px.line(ret, title=name, markers=True)
 
         # price = price.assign(bs=cross_bs(price))
         cross_bs(price,0,1)
@@ -208,13 +248,13 @@ boll_input2, apo_input1, apo_input2):
     if 'btn5' == ctx.triggered_id:
         price = price.assign(sma1=SMA(price,apo_input1))
         price = price.assign(sma2=SMA(price['Close'],apo_input2))
-        fig = px.line(price, title=ticker, markers=True)
+        fig = px.line(price, title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
         fig['data'][2].line.color = '#ff97ff'
 
         ret = cross_return(price,1,2)
-        fig2 = px.line(ret, title=ticker, markers=True)
+        fig2 = px.line(ret, title=name, markers=True)
 
         # price = price.assign(bs=cross_bs(price))
         cross_bs(price,1,2)
@@ -234,13 +274,13 @@ boll_input2, apo_input1, apo_input2):
     if 'btn3' == ctx.triggered_id:
         bolband(price,boll_input1,boll_input2)
         # price = price.assign(uband=bol['uband'], lband=bol['lband'])
-        fig = px.line(price, title=ticker, markers=True)
+        fig = px.line(price, title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
         fig['data'][1].line.color = '#ab63fa'
         fig['data'][2].line.color = '#ab63fa'
 
         ret = bol_return(price)
-        fig2 = px.line(ret, title=ticker, markers=True)
+        fig2 = px.line(ret, title=name, markers=True)
 
         # price = price.assign(bs=bol_pos_bs(price))
         bol_bs(price)
@@ -261,11 +301,32 @@ boll_input2, apo_input1, apo_input2):
         #sort_values() ไม่ได้ inplace
         price = supres(price)
         # print(price)
-        fig = px.line(price['Close'], title=ticker, markers=True)
+        fig = px.line(price['Close'], title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
         crit = price.loc[price['crit'] == 1]
         # print(crit.shape)
         for yy in crit['Close'] : fig.add_hline(y = yy, line_color="#ab63fa")
 
+
     return fig, fig2, first, last
     # return fig
+
+@callback(
+    Output('download', 'data'),
+    Input('download_btn', 'n_clicks'),
+)
+def download_csv(download_btn):
+    if 'download_btn' == ctx.triggered_id:
+        return dcc.send_data_frame(close.to_csv, f"{name}.csv")
+
+# @callback(
+#     Output('upload_output', 'children'),
+#     Input('upload_btn', 'contents'),
+# )
+# def upload(list_of_contents, list_of_names, list_of_dates):
+    # if list_of_contents is not None:
+    #     children = [
+    #         parse_contents(c, n, d) for c, n, d in
+    #         zip(list_of_contents, list_of_names, list_of_dates)]
+    # return children
+    # print(list_of_contents)
