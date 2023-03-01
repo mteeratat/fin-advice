@@ -27,8 +27,8 @@ layout = html.Div(children=[
 
     html.Div(
         children=[
-            dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True,),
-            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True,),
+            dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True, value='',),
+            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True, value='',),
         ],
     ),
     
@@ -39,7 +39,7 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max'),
+            dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='',),
             html.Button('Get Data', id='get_data1', n_clicks=0),
         ],
     ),
@@ -49,8 +49,8 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='start', debounce=True, placeholder='start:YYYY-MM-DD'),
-            dcc.Input(id='end', debounce=True, placeholder='end:YYYY-MM-DD'),
+            dcc.Input(id='start', debounce=True, placeholder='start:YYYY-MM-DD', value='',),
+            dcc.Input(id='end', debounce=True, placeholder='end:YYYY-MM-DD', value='',),
             html.Button('Get Data', id='get_data2', n_clicks=0),
         ],
     ),
@@ -59,6 +59,10 @@ layout = html.Div(children=[
 
     dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
     # html.Div(id='upload_output', children=''),
+
+    html.P('or'),
+
+    html.Button('Reset Data', id='reset_data', n_clicks=0),
 
     dcc.Graph(
         id='example-graph',
@@ -76,7 +80,7 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Simple Moving Average', href='https://www.investopedia.com/terms/s/sma.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='sma_input', debounce=True, placeholder='SMA days'),
+                    dcc.Input(id='sma_input', debounce=True, placeholder='SMA days', value='',),
                     html.Button('SMA', id='btn1', n_clicks=0),
                 ],
             ),
@@ -84,7 +88,7 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Exponential Moving Average', href='https://www.investopedia.com/terms/e/ema.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='ema_input', debounce=True, placeholder='EMA days'),
+                    dcc.Input(id='ema_input', debounce=True, placeholder='EMA days', value='',),
                     html.Button('EMA', id='btn2', n_clicks=0),
                 ],
             ),
@@ -92,8 +96,8 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Absolute Price Oscillator', href='https://www.marketvolume.com/technicalanalysis/apo.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='apo_input1', debounce=True, placeholder='shorter SMA days'),
-                    dcc.Input(id='apo_input2', debounce=True, placeholder='longer SMA days'),
+                    dcc.Input(id='apo_input1', debounce=True, placeholder='shorter SMA days', value='',),
+                    dcc.Input(id='apo_input2', debounce=True, placeholder='longer SMA days', value='',),
                     html.Button('APO', id='btn5', n_clicks=0),
                 ],
             ),
@@ -101,12 +105,13 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Bollinger Band', href='https://www.investopedia.com/terms/b/bollingerbands.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days'),
-                    dcc.Input(id='boll_input2', debounce=True, placeholder='std factor'),
+                    dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days', value='',),
+                    dcc.Input(id='boll_input2', debounce=True, placeholder='std factor', value='',),
                     html.Button('Boll', id='btn3', n_clicks=0),
                 ],
             ),
-            html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'inline-block'}, ),
+            # html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'inline-block'}, ),
+            html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'none'}, ),
         ]
     ),
     
@@ -146,9 +151,10 @@ layout = html.Div(children=[
     Input('apo_input2', 'value'),
     Input('upload', 'contents'),
     Input('upload', 'filename'),
+    Input('reset_data', 'n_clicks'),
 )
 def change_indicator(btn1, btn2, btn3, btn4, btn5, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, 
-boll_input2, apo_input1, apo_input2, contents, filename):
+boll_input2, apo_input1, apo_input2, contents, filename, reset_data):
     global close, port, name
     price = close.copy()
 
@@ -157,6 +163,11 @@ boll_input2, apo_input1, apo_input2, contents, filename):
     fig2 = px.line(port, title=name, markers=True)
     last = "Final money : cash = 0, stocks values = 0, total = 0"
     first = 'Initial money : 0'
+
+    if 'reset_data' == ctx.triggered_id:
+        fig = px.line(port, title='ticker', markers=True)
+        fig2 = px.line(port, title='ticker', markers=True)
+        name = 'ticker'
 
     if 'get_data1' == ctx.triggered_id:
         tick = yf.Ticker(ticker)
