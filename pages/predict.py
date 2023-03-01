@@ -6,6 +6,7 @@ import pandas as pd
 import base64
 import io
 import pickle
+from sklearn.preprocessing import StandardScaler
 
 pre = register_page(__name__)
 
@@ -51,7 +52,8 @@ layout = html.Div(children=[
 
     html.P('or'),
 
-    dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
+    # dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
+    html.Button(id='upload_btn', children=dcc.Upload(id='upload', children='Upload File (CSV)')),
 
     html.P('or'),
 
@@ -67,14 +69,15 @@ layout = html.Div(children=[
 
     html.Div(children='model'),
 
-    html.Button('ARIMA', id='btn1', n_clicks=0),
-    html.Button('model 2', id='btn2', n_clicks=0),
+    html.Button('ARIMA_backtest', id='btn1', n_clicks=0),
+    html.Button('ARIMA_forecast', id='btn2', n_clicks=0),
     html.Button('model 3', id='btn3', n_clicks=0),
 ])
 
 @callback(
     Output('example-graph3', 'figure'),
     Input('btn1', 'n_clicks'),
+    Input('btn2', 'n_clicks'),
     Input('ticker', 'value'), 
     Input('interval', 'value'), 
     Input('period', 'value'), 
@@ -86,7 +89,7 @@ layout = html.Div(children=[
     Input('upload', 'filename'),
     Input('reset_data', 'n_clicks'),
 )
-def change_model(btn1, ticker, interval, period, start, end, contents, filename, get_data1, get_data2, reset_data):
+def change_model(btn1, btn2, ticker, interval, period, start, end, contents, filename, get_data1, get_data2, reset_data):
     global close, port, name
     price = close.copy()
 
@@ -145,30 +148,56 @@ def change_model(btn1, ticker, interval, period, start, end, contents, filename,
 
         # forecastt = arima_model.predict(len(test), alpha=0.05)
 
-        pickled_model = pickle.load(open('model\\arima_trained.pkl', 'rb'))
+        pickled_model = pickle.load(open('model\\arima_trained_backtest.pkl', 'rb'))
         txt = pickle.load(open('model\\arima_data.pkl', 'rb'))
 
-        print(txt)
+        # print(txt)
 
+        #### backtest #####
         temp = close[['Close']]
         temp['diff'] = temp['Close'] - temp['Close'].shift(1)
-        temp['forecast'] = pickled_model.forecast(len(close), alpha=0.05)
+        # temp['forecast'] = pickled_model.forecast(5)
+        print(len(close))
+        temp['forecast'] = pickled_model.predict(close.index[0],close.index[-1])
         index = len(close) - len(temp['forecast'].dropna())
 
+        scaler = StandardScaler()
+        # f = temp[['diff']].dropna()
+        # print(f)
+        scaler.fit(temp[['diff']].dropna())
+
         temp['compute'] = temp['diff']
-        temp['compute'].iloc[index:] = temp['forecast'].dropna()
+        abc = temp[['forecast']].dropna()
+        abc.columns = ['diff']
+        norm = scaler.transform(abc)
+        # print(norm.T[0])
+        normm = pd.Series(norm.T[0])
+        # temp['compute'].iloc[index:] = temp['forecast'].dropna()
+        temp['compute'].iloc[index:] = normm
         temp['cumsum'] = temp['compute'].cumsum()
 
         print(temp)
 
-        forecast = close['Close'].iloc[0] + temp['cumsum']
+        forecast = temp[['forecast']].copy()
+        forecast.iloc[index:] = close['Close'].iloc[0] + temp[['cumsum']].iloc[index:]
+        # forecast = close['Close'].iloc[0] + temp['cumsum']
         pred = close.assign(predict=forecast)
+
         print(pred)
-        fig = px.line(pred, title='if arima', markers=True)
+        fig = px.line(pred, title='arima backtest', markers=True)
+
+    if 'btn2' == ctx.triggered_id:
+
+        pickled_model = pickle.load(open('model\\arima_trained_forecast.pkl', 'rb'))
+
+        forecast = pickled_model.forecast(5)
+        # print(forecast)
+        pred = pd.concat([close,forecast])
+
+        # print(pred)
+        fig = px.line(pred, title='arima forecast', markers=True)
     
     return fig
-
-# def prepare():
 
 def arimamodel(timeseriesarray):
     autoarima_model = pmd.auto_arima(timeseriesarray, 

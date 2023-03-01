@@ -57,7 +57,8 @@ layout = html.Div(children=[
 
     html.P('or'),
 
-    dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
+    # dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
+    html.Button(id='upload_btn', children=dcc.Upload(id='upload', children='Upload File (CSV)')),
     # html.Div(id='upload_output', children=''),
 
     html.P('or'),

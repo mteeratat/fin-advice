@@ -24,8 +24,9 @@ def check_adfuller(time_series):
     else:
         print("Do not reject the null hypothesis. Data is not stationary ")
 
-ptt = yf.Ticker('^set.bk')
-data = ptt.history(interval='1wk', period='2y')
+# tic = yf.Ticker('^set.bk')
+tic = yf.Ticker('ptt.bk')
+data = tic.history(interval='1wk', period='2y')
 close = data[['Close']]
 # print(data.columns)
 # close.plot()
@@ -33,68 +34,74 @@ close = data[['Close']]
 
 check_adfuller(close)
 
-# diff1 = close['Close'] - close['Close'].shift(1)
+diff1 = close['Close'] - close['Close'].shift(1)
 
-# diff1 = diff1.dropna()
-# # diff1.plot()
-# # print(diff1)
-# # print(type(diff1))
+diff1 = diff1.dropna()
+# diff1.plot()
+# print(diff1)
+# print(type(diff1))
 
-# check_adfuller(diff1)
+check_adfuller(diff1)
 
-acf = plot_acf(close.dropna())
-pacf = plot_pacf(close.dropna(), method='ywmle')
-# acf = plot_acf(diff1.dropna())
-# pacf = plot_pacf(diff1.dropna(), method='ywmle')
+# acf = plot_acf(close.dropna())
+# pacf = plot_pacf(close.dropna(), method='ywmle')
+acf = plot_acf(diff1.dropna())
+pacf = plot_pacf(diff1.dropna(), method='ywmle')
+plt.show()
 
-p = 1
-d = 0
-q = 2
 
-index = int(len(close)*9/10)
-train = close[:index].dropna()
-test = close[index:].dropna()
+# index = int(len(close)*9/10)
+# train = close[:index].dropna()
+# test = close[index:].dropna()
 
-# index = int(len(diff1)*9/10)
-# train = diff1[:index].dropna()
-# test = diff1[index:].dropna()
+index = int(len(diff1)*9/10)
+train = diff1[:index].dropna()
+test = diff1[index:].dropna()
 
 ############################################ train model ##############################################################
 
-min_aic = 9999
-for i in range(0,6):
-    for j in range(0,6):
-        model = ARIMA(train, order=(i,d,j))
-        result = model.fit()
-# print(result.summary())
-        print(f"{result.aic}, {i}, {j}")
-        if min_aic >= result.aic:
-            min_aic = result.aic
-            p = i
-            q = j
+p = 3
+d = 1
+q = 5
+
+# min_aic = 9999
+# for i in range(0,6):
+#     for j in range(0,6):
+#         model = ARIMA(train, order=(i,d,j))
+#         result = model.fit()
+# # print(result.summary())
+#         print(f"{result.aic}, {i}, {j}")
+#         if min_aic >= result.aic:
+#             min_aic = result.aic
+#             p = i
+#             q = j
 print(p,d,q)
-model = ARIMA(train, order=(p,d,q))
+# model = ARIMA(train, order=(p,d,q)) # for backtest
+model = ARIMA(close, order=(p,d,q)) # for forecast
 result = model.fit()
 
 ############################################# export trained model #######################################################
 
-# pickle.dump(result, open('arima_trained.pkl', 'wb'))
+# pickle.dump(result, open('arima_trained_backtest.pkl', 'wb'))
+pickle.dump(result, open('arima_trained_forecast.pkl', 'wb'))
 mean = close['Close'].mean()
 sd = close['Close'].std()
 lenn = len(close)
 txt = f"{mean},{sd},{lenn}"
-# pickle.dump(txt, open('arima_data.pkl', 'wb'))
+pickle.dump(txt, open('arima_data.pkl', 'wb'))
 
-################################################ test forecast ################################################################
+################################################ backtest ################################################################
 
-closee = pd.DataFrame(close)
-closee['forecast'] = result.forecast(len(test), alpha=0.05)
+# closee = pd.DataFrame(close)
+# closee['forecast'] = result.forecast(len(test), alpha=0.05)
 # diff = pd.DataFrame(diff1)
 # diff['forecast'] = result.forecast(len(test), alpha=0.05)
 
-closee.plot()
+# closee.plot()
 # diff.plot()
-plt.show()
+# plt.show()
+# print(closee)
+
 
 # diff['compute'] = diff['Close']
 # diff['compute'].iloc[index:] = diff['forecast'].dropna()
@@ -107,14 +114,32 @@ plt.show()
 # close.plot()
 # plt.show()
 
+################################################ test forecast ################################################################
+
+# closee = pd.DataFrame(close)
+# x = result.forecast(5)
+# print(x)
+# print(type(x))
+# res = pd.DataFrame(result.forecast(10))
+# res.columns = ['Close']
+# print(res)
+# ret = pd.concat([closee,res])
+# print(ret)
+# closee[['forecast']] = pd.concat([closee,res])
+# closee['Close'] = pd.concat([closee[['Close']],x])
+# closee['forecast'] = res
+
+# ret.plot()
+# plt.show()
+
 ################################################ evaluate model ######################################################
 
-mae = mean_absolute_error(test, close['forecast'].dropna())
-mse = mean_squared_error(test, close['forecast'].dropna())
+# mae = mean_absolute_error(test, closee['forecast'].dropna())
+# mse = mean_squared_error(test, closee['forecast'].dropna())
 # mae = mean_absolute_error(test, diff['forecast'].dropna())
 # mse = mean_squared_error(test, diff['forecast'].dropna())
-rmse = np.sqrt(mse)
+# rmse = np.sqrt(mse)
 
-print(mae)
-print(mse)
-print(rmse)
+# print(mae)
+# print(mse)
+# print(rmse)
