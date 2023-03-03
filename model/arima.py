@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.arima.model import ARIMA
 import pandas as pd
 import pickle
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 import numpy as np
 
 def check_adfuller(time_series):
@@ -76,14 +76,14 @@ q = 5
 #             p = i
 #             q = j
 print(p,d,q)
-# model = ARIMA(train, order=(p,d,q)) # for backtest
-model = ARIMA(close, order=(p,d,q)) # for forecast
+model = ARIMA(train, order=(p,d,q)) # for backtest
+# model = ARIMA(close, order=(p,d,q)) # for forecast
 result = model.fit()
 
 ############################################# export trained model #######################################################
 
-# pickle.dump(result, open('arima_trained_backtest.pkl', 'wb'))
-pickle.dump(result, open('arima_trained_forecast.pkl', 'wb'))
+pickle.dump(result, open('arima_trained_backtest.pkl', 'wb'))
+# pickle.dump(result, open('arima_trained_forecast.pkl', 'wb'))
 mean = close['Close'].mean()
 sd = close['Close'].std()
 lenn = len(close)
@@ -94,25 +94,25 @@ pickle.dump(txt, open('arima_data.pkl', 'wb'))
 
 # closee = pd.DataFrame(close)
 # closee['forecast'] = result.forecast(len(test), alpha=0.05)
-# diff = pd.DataFrame(diff1)
-# diff['forecast'] = result.forecast(len(test), alpha=0.05)
+diff = pd.DataFrame(diff1)
+diff['forecast'] = result.forecast(len(test), alpha=0.05)
 
 # closee.plot()
-# diff.plot()
-# plt.show()
+diff.plot()
+plt.show()
 # print(closee)
 
 
-# diff['compute'] = diff['Close']
-# diff['compute'].iloc[index:] = diff['forecast'].dropna()
-# diff['cumsum'] = diff['compute'].cumsum()
+diff['compute'] = diff['Close']
+diff['compute'].iloc[index:] = diff['forecast'].dropna()
+diff['cumsum'] = diff['compute'].cumsum()
 # print(diff)
 
-# close['forecast'] = close['Close'].iloc[0] + diff['cumsum']
+close['forecast'] = close['Close'].iloc[0] + diff['cumsum']
 # print(close)
 
-# close.plot()
-# plt.show()
+close.plot()
+plt.show()
 
 ################################################ test forecast ################################################################
 
@@ -135,11 +135,14 @@ pickle.dump(txt, open('arima_data.pkl', 'wb'))
 ################################################ evaluate model ######################################################
 
 # mae = mean_absolute_error(test, closee['forecast'].dropna())
+# mape = mean_absolute_percentage_error(test, closee['forecast'].dropna())
 # mse = mean_squared_error(test, closee['forecast'].dropna())
-# mae = mean_absolute_error(test, diff['forecast'].dropna())
-# mse = mean_squared_error(test, diff['forecast'].dropna())
-# rmse = np.sqrt(mse)
+mae = mean_absolute_error(test, diff['forecast'].dropna())
+mape = mean_absolute_percentage_error(test, diff['forecast'].dropna())
+mse = mean_squared_error(test, diff['forecast'].dropna())
+rmse = np.sqrt(mse)
 
-# print(mae)
-# print(mse)
-# print(rmse)
+print(mae)
+print(mape)
+print(mse)
+print(rmse)

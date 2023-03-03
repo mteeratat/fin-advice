@@ -1,8 +1,4 @@
-import yfinance as yf
 from dash import Dash, html, dcc, Input, Output, State, ctx, page_registry, page_container
-import pandas as pd
-import plotly.express as px
-from indicator.ma_graph import SMA, EMA
 
 app = Dash(__name__, use_pages=True)
 

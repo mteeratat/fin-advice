@@ -2,12 +2,17 @@ import yfinance as yf
 from dash import Dash, html, dcc, Input, Output, State, ctx, register_page, callback
 import pandas as pd
 import plotly.express as px
-from indicator.ma_graph import SMA, EMA, bolband
-from indicator.ma_ret import cross_return, cross_bs, bol_return, bol_bs
+from indicator.ma_graph import SMA, EMA
+from indicator.ma_ret import cross_return, cross_bs
+from indicator.bolband_graph import bolband
+from indicator.bolband_ret import bol_return, bol_bs
 from indicator.sup_res import supres
+from indicator.rsi_graph import rsi
+from indicator.rsi_ret import rsi_return, rsi_bs
 import numpy as np
 import base64
 import io
+import dash_uploader as du
 
 ret = register_page(__name__)
 
@@ -16,6 +21,7 @@ port = pd.DataFrame(data=[100 for i in range(100)])
 
 fig = px.line(port, title='ticker', markers=True)
 fig2 = px.line(port, title='ticker', markers=True)
+fig4 = px.line(port, title='ticker', markers=True)
 
 #color: https://plotly.com/python/discrete-color/
 #display: https://developer.mozilla.org/en-US/docs/Web/CSS/display
@@ -70,6 +76,12 @@ layout = html.Div(children=[
         figure=fig
     ),
 
+    dcc.Graph(
+        id='example-graph4',
+        figure=fig4,
+        style={'display' : 'none'},
+    ),
+
     html.Button('Download File (CSV)', id='download_btn'),
     dcc.Download(id='download'),
 
@@ -111,6 +123,7 @@ layout = html.Div(children=[
                     html.Button('Boll', id='btn3', n_clicks=0),
                 ],
             ),
+            html.Button('RSI', id='btn6', n_clicks=0,),
             # html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'inline-block'}, ),
             html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'none'}, ),
         ]
@@ -132,11 +145,14 @@ layout = html.Div(children=[
     Output('example-graph2', 'figure'),
     Output('init', 'children'),
     Output('final', 'children'),
+    Output('example-graph4', 'style'),
+    Output('example-graph4', 'figure'),
     Input('btn1', 'n_clicks'),
     Input('btn2', 'n_clicks'),
     Input('btn3', 'n_clicks'),
     Input('btn4', 'n_clicks'),
     Input('btn5', 'n_clicks'),
+    Input('btn6', 'n_clicks'),
     Input('ticker', 'value'), 
     Input('interval', 'value'), 
     Input('period', 'value'), 
@@ -151,11 +167,12 @@ layout = html.Div(children=[
     Input('apo_input1', 'value'),
     Input('apo_input2', 'value'),
     Input('upload', 'contents'),
-    Input('upload', 'filename'),
+    State('upload', 'filename'),
+    Input('upload_btn', 'n_clicks'),
     Input('reset_data', 'n_clicks'),
 )
-def change_indicator(btn1, btn2, btn3, btn4, btn5, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, 
-boll_input2, apo_input1, apo_input2, contents, filename, reset_data):
+def change_indicator(btn1, btn2, btn3, btn4, btn5, btn6, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, 
+boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data):
     global close, port, name
     price = close.copy()
 
@@ -164,8 +181,11 @@ boll_input2, apo_input1, apo_input2, contents, filename, reset_data):
     fig2 = px.line(port, title=name, markers=True)
     last = "Final money : cash = 0, stocks values = 0, total = 0"
     first = 'Initial money : 0'
+    st = style={'display' : 'none'}
+    fig4 = px.line(port, title=name, markers=True)
 
     if 'reset_data' == ctx.triggered_id:
+        close = port.copy()
         fig = px.line(port, title='ticker', markers=True)
         fig2 = px.line(port, title='ticker', markers=True)
         name = 'ticker'
@@ -190,6 +210,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, reset_data):
         # content_type, content_string = contents.split(',')
         # decoded = base64.b64decode(content_string)
         # filenames = io.StringIO(decoded.decode('utf-8'))
+        # print(filename)
         try:
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV file
@@ -198,6 +219,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, reset_data):
                 filenames = io.StringIO(decoded.decode('utf-8'))
 
                 data = pd.read_csv(filenames)
+                data.index = data['Date']
                 close = data[['Close']]
 
                 name = filename
@@ -309,6 +331,41 @@ boll_input2, apo_input1, apo_input2, contents, filename, reset_data):
             last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
+    if 'btn6' == ctx.triggered_id:
+        price['rsi'] = rsi(price)
+        rsi_res = rsi(price)
+        fig4 = px.line(price['rsi'], title='RSI', markers=True)
+        fig4['data'][0].line.color = '#ab63fa'
+        fig4.add_hline(y = 70, line_color="#ffa15a")
+        fig4.add_hline(y = 30, line_color="#ffa15a")
+        fig4.update_yaxes(range = [0,100])
+
+        fig = px.line(price['Close'], title=name, markers=True)
+        st = style={}
+
+        # print(price)
+        ret = rsi_return(price)
+        fig2 = px.line(ret, title=name, markers=True)
+
+        print(price)
+        rsi_bs(price)
+        print(price)
+        buy = price.loc[price['b/s'] == 'buy']
+        for xx in buy.index : fig.add_vline(x = xx, line_color="#00cc96")
+        sell = price.loc[price['b/s'] == 'sell']
+        for xx in sell.index : fig.add_vline(x = xx, line_color="#ef553b")
+        for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
+        for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
+        for xx in buy.index : fig4.add_vline(x = xx, line_color="#00cc96")
+        for xx in sell.index : fig4.add_vline(x = xx, line_color="#ef553b")
+
+        if buy.shape[0] == sell.shape[0]:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = 0, total = {ret.iloc[-1][0]:.2f}"    
+        elif buy.shape[0]-sell.shape[0] == 1:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        first = f"Initial money : {close['Close'].mean()*10:.2f}"
+
+
     if 'btn4' == ctx.triggered_id:
         #sort_values() ไม่ได้ inplace
         price = supres(price)
@@ -320,7 +377,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, reset_data):
         for yy in crit['Close'] : fig.add_hline(y = yy, line_color="#ab63fa")
 
 
-    return fig, fig2, first, last
+    return fig, fig2, first, last, st, fig4
     # return fig
 
 @callback(

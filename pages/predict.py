@@ -7,6 +7,7 @@ import base64
 import io
 import pickle
 from sklearn.preprocessing import StandardScaler
+import dash_uploader as du
 
 pre = register_page(__name__)
 
@@ -50,10 +51,10 @@ layout = html.Div(children=[
         ],
     ),
 
-    html.P('or'),
+    # html.P('or'),
 
     # dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
-    html.Button(id='upload_btn', children=dcc.Upload(id='upload', children='Upload File (CSV)')),
+    html.Button(id='upload_btn', children=dcc.Upload(id='upload', children='Upload File (CSV)'), style={'display' : 'none'}),
 
     html.P('or'),
 
@@ -86,19 +87,20 @@ layout = html.Div(children=[
     Input('end', 'value'),
     Input('get_data2', 'n_clicks'),
     Input('upload', 'contents'),
-    Input('upload', 'filename'),
+    State('upload', 'filename'),
+    Input('upload_btn', 'n_clicks'),
     Input('reset_data', 'n_clicks'),
 )
-def change_model(btn1, btn2, ticker, interval, period, start, end, contents, filename, get_data1, get_data2, reset_data):
+def change_model(btn1, btn2, ticker, interval, period, start, end, contents, filename, get_data1, get_data2, upload_btn, reset_data):
     global close, port, name
-    price = close.copy()
 
     # print(ctx.triggered_id)
     fig = px.line(port, title=name, markers=True)
 
     if 'reset_data' == ctx.triggered_id:
+        close = port.copy()
         fig = px.line(port, title='ticker', markers=True)
-        fig2 = px.line(port, title='ticker', markers=True)
+        name = 'ticker'
 
     if 'get_data1' == ctx.triggered_id:
         tick = yf.Ticker(ticker)
@@ -120,6 +122,8 @@ def change_model(btn1, btn2, ticker, interval, period, start, end, contents, fil
         # content_type, content_string = contents.split(',')
         # decoded = base64.b64decode(content_string)
         # filenames = io.StringIO(decoded.decode('utf-8'))
+        print(filename)
+        print(contents)
         try:
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV file
@@ -128,6 +132,7 @@ def change_model(btn1, btn2, ticker, interval, period, start, end, contents, fil
                 filenames = io.StringIO(decoded.decode('utf-8'))
 
                 data = pd.read_csv(filenames)
+                data.index = data['Date']
                 close = data[['Close']]
 
                 name = filename
@@ -157,8 +162,10 @@ def change_model(btn1, btn2, ticker, interval, period, start, end, contents, fil
         temp = close[['Close']]
         temp['diff'] = temp['Close'] - temp['Close'].shift(1)
         # temp['forecast'] = pickled_model.forecast(5)
-        print(len(close))
-        temp['forecast'] = pickled_model.predict(close.index[0],close.index[-1])
+        # print(close.index[0])
+        # print(close.index[-1])
+        # print(close)
+        temp['forecast'] = pickled_model.predict(start=close.index[0],end=close.index[-1])
         index = len(close) - len(temp['forecast'].dropna())
 
         scaler = StandardScaler()
@@ -176,14 +183,15 @@ def change_model(btn1, btn2, ticker, interval, period, start, end, contents, fil
         temp['compute'].iloc[index:] = normm
         temp['cumsum'] = temp['compute'].cumsum()
 
-        print(temp)
+        # print(temp)
 
         forecast = temp[['forecast']].copy()
         forecast.iloc[index:] = close['Close'].iloc[0] + temp[['cumsum']].iloc[index:]
         # forecast = close['Close'].iloc[0] + temp['cumsum']
         pred = close.assign(predict=forecast)
+        pred.columns = ['Close','backtest']
+        # print(pred)
 
-        print(pred)
         fig = px.line(pred, title='arima backtest', markers=True)
 
     if 'btn2' == ctx.triggered_id:
@@ -193,18 +201,19 @@ def change_model(btn1, btn2, ticker, interval, period, start, end, contents, fil
         forecast = pickled_model.forecast(5)
         # print(forecast)
         pred = pd.concat([close,forecast])
+        pred.columns = ['Close','predict']
 
         # print(pred)
         fig = px.line(pred, title='arima forecast', markers=True)
     
     return fig
 
-def arimamodel(timeseriesarray):
-    autoarima_model = pmd.auto_arima(timeseriesarray, 
-                              start_p=1, 
-                              start_q=2,
-                              start_Q=2,
-                              max_Q=5,
-                              test="adf",
-                              trace=True)
-    return autoarima_model
+# def arimamodel(timeseriesarray):
+#     autoarima_model = pmd.auto_arima(timeseriesarray, 
+#                               start_p=1, 
+#                               start_q=2,
+#                               start_Q=2,
+#                               max_Q=5,
+#                               test="adf",
+#                               trace=True)
+#     return autoarima_model
