@@ -1,4 +1,4 @@
-from dash import Dash, html, dcc, Input, Output, State, ctx, register_page, callback
+from dash import html, dcc, Input, Output, State, ctx, register_page, callback
 import yfinance as yf
 import plotly.express as px
 import pmdarima as pmd
@@ -7,7 +7,6 @@ import base64
 import io
 import pickle
 from sklearn.preprocessing import StandardScaler
-import dash_uploader as du
 
 predict_page = register_page(__name__)
 
@@ -79,8 +78,6 @@ layout = html.Div(children=[
 
 @callback(
     Output('example-graph3', 'figure'),
-    Input('btn1', 'n_clicks'),
-    Input('btn2', 'n_clicks'),
     Input('ticker', 'value'), 
     Input('interval', 'value'), 
     Input('period', 'value'), 
@@ -90,10 +87,8 @@ layout = html.Div(children=[
     Input('get_data2', 'n_clicks'),
     Input('upload', 'contents'),
     State('upload', 'filename'),
-    Input('upload_btn', 'n_clicks'),
-    Input('reset_data', 'n_clicks'),
 )
-def change_model(btn1, btn2, ticker, interval, period, start, end, contents, filename, get_data1, get_data2, upload_btn, reset_data):
+def change_model(ticker, interval, period, start, end, contents, filename,):
     global close, port, name
 
     # print(ctx.triggered_id)

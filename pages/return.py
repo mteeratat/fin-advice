@@ -1,19 +1,18 @@
 import yfinance as yf
-from dash import Dash, html, dcc, Input, Output, State, ctx, register_page, callback
+from dash import html, dcc, Input, Output, State, ctx, register_page, callback
 import pandas as pd
 import plotly.express as px
 from indicator.ma_graph import SMA, EMA
 from indicator.ma_ret import cross_return, cross_bs
 from indicator.bolband_graph import bolband
 from indicator.bolband_ret import bol_return, bol_bs
-from indicator.sup_res import supres
+from indicator.highlow_graph import highlow
+from indicator.highlow_ret import highlow_ret, highlow_bs
 from indicator.rsi_graph import rsi
 from indicator.rsi_ret import rsi_return, rsi_bs
 import numpy as np
 import base64
 import io
-import dash_uploader as du
-from model.randforest import test
 
 return_page = register_page(__name__)
 
@@ -98,7 +97,7 @@ layout = html.Div(children=[
                     dcc.Link('Simple Moving Average', href='https://www.investopedia.com/terms/s/sma.asp',style={'textAlign': 'center','font-size':'vw'}),
                     # dcc.Input(id='sma_input', debounce=True, placeholder='SMA days', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='sma_input', placeholder='SMA days'),
-                    html.Button('SMA', id='btn1', n_clicks=0),
+                    html.Button('SMA', id='sma_btn', n_clicks=0),
                 ],
             ),
             html.Div(
@@ -107,7 +106,7 @@ layout = html.Div(children=[
                     dcc.Link('Exponential Moving Average', href='https://www.investopedia.com/terms/e/ema.asp',style={'textAlign': 'center','font-size':'vw'}),
                     # dcc.Input(id='ema_input', debounce=True, placeholder='EMA days', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='ema_input', placeholder='EMA days'),
-                    html.Button('EMA', id='btn2', n_clicks=0),
+                    html.Button('EMA', id='ema_btn', n_clicks=0),
                 ],
             ),
             html.Div(
@@ -118,7 +117,7 @@ layout = html.Div(children=[
                     # dcc.Input(id='apo_input2', debounce=True, placeholder='longer SMA days', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='apo_input1', placeholder='shorter SMA days'),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='apo_input2', placeholder='longer SMA days'),
-                    html.Button('APO', id='btn5', n_clicks=0),
+                    html.Button('APO', id='apo_btn', n_clicks=0),
                 ],
             ),
             html.Div(
@@ -129,12 +128,25 @@ layout = html.Div(children=[
                     dcc.Input(id='boll_input2', debounce=True, placeholder='std factor', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='boll_input1', placeholder='SMA days'),
                     # dcc.Dropdown(options=['3','7','14','25','60'], id='boll_input2', placeholder='std factor'),
-                    html.Button('Boll', id='btn3', n_clicks=0),
+                    html.Button('Boll', id='boll_btn', n_clicks=0),
                 ],
             ),
-            html.Button('RSI', id='btn6', n_clicks=0,),
-            # html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'inline-block'}, ),
-            html.Button('sup-res', id='btn4', n_clicks=0, style={'display' : 'none'}, ),
+            html.Div(
+                style={'display' : 'block'}, 
+                children=[
+                    dcc.Link('RSI', href='https://www.investopedia.com/terms/r/rsi.asp',style={'textAlign': 'center','font-size':'vw'}),
+                    html.Button('RSI', id='rsi_btn', n_clicks=0,),
+                ],
+            ),
+            html.Div(
+                style={'display' : 'block'}, 
+                children=[
+                    dcc.Link('RSI', href='https://www.investopedia.com/terms/r/rsi.asp',style={'textAlign': 'center','font-size':'vw'}),
+                    html.Button('peak value', id='highlow_btn', n_clicks=0,),
+                ],
+            ),
+            # html.Button('sup-res', id='supres_btn', n_clicks=0, style={'display' : 'inline-block'}, ),
+            html.Button('sup-res', id='supres_btn', n_clicks=0, style={'display' : 'none'}, ),
         ]
     ),
     
@@ -156,19 +168,11 @@ layout = html.Div(children=[
     Output('final', 'children'),
     Output('example-graph4', 'style'),
     Output('example-graph4', 'figure'),
-    Input('btn1', 'n_clicks'),
-    Input('btn2', 'n_clicks'),
-    Input('btn3', 'n_clicks'),
-    Input('btn4', 'n_clicks'),
-    Input('btn5', 'n_clicks'),
-    Input('btn6', 'n_clicks'),
     Input('ticker', 'value'), 
     Input('interval', 'value'), 
     Input('period', 'value'), 
-    Input('get_data1', 'n_clicks'),
     Input('start', 'value'), 
     Input('end', 'value'), 
-    Input('get_data2', 'n_clicks'),
     Input('sma_input', 'value'),
     Input('ema_input', 'value'),
     Input('boll_input1', 'value'),
@@ -177,11 +181,9 @@ layout = html.Div(children=[
     Input('apo_input2', 'value'),
     Input('upload', 'contents'),
     State('upload', 'filename'),
-    Input('upload_btn', 'n_clicks'),
-    Input('reset_data', 'n_clicks'),
 )
-def change_indicator(btn1, btn2, btn3, btn4, btn5, btn6, ticker, interval, period, get_data1, start, end, get_data2, sma_input, ema_input, boll_input1, 
-boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data):
+def change_indicator(ticker, interval, period,  start, end, sma_input, ema_input, boll_input1, boll_input2, apo_input1, apo_input2, 
+                     contents, filename,):
     global close, port, name
     price = close.copy()
 
@@ -240,8 +242,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
             print(e)
             print('There was an error processing this file.')
         
-    if 'btn1' == ctx.triggered_id:
-        # test(price)
+    if 'sma_btn' == ctx.triggered_id:
         price = price.assign(sma=SMA(price,sma_input))
         fig = px.line(price, title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
@@ -265,7 +266,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
             last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
-    if 'btn2' == ctx.triggered_id:
+    if 'ema_btn' == ctx.triggered_id:
         price = price.assign(ema=EMA(price,ema_input))
         fig = px.line(price[['Close', 'ema']], title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
@@ -289,7 +290,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
             last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
-    if 'btn5' == ctx.triggered_id:
+    if 'apo_btn' == ctx.triggered_id:
         price = price.assign(sma1=SMA(price,apo_input1))
         price = price.assign(sma2=SMA(price['Close'],apo_input2))
         fig = px.line(price, title=name, markers=True)
@@ -315,7 +316,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
             last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
-    if 'btn3' == ctx.triggered_id:
+    if 'boll_btn' == ctx.triggered_id:
         bolband(price,boll_input1,boll_input2)
         # price = price.assign(uband=bol['uband'], lband=bol['lband'])
         fig = px.line(price, title=name, markers=True)
@@ -341,7 +342,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
             last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
-    if 'btn6' == ctx.triggered_id:
+    if 'rsi_btn' == ctx.triggered_id:
         price['rsi'] = rsi(price)
         rsi_res = rsi(price)
         fig4 = px.line(price['rsi'], title='RSI', markers=True)
@@ -375,16 +376,38 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
             last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
         first = f"Initial money : {close['Close'].mean()*10:.2f}"
 
-
-    if 'btn4' == ctx.triggered_id:
-        #sort_values() ไม่ได้ inplace
-        price = supres(price)
-        # print(price)
+    if 'highlow_btn' == ctx.triggered_id:
+        price = highlow(price)
         fig = px.line(price['Close'], title=name, markers=True)
-        fig['data'][0].line.color = '#636efa'
-        crit = price.loc[price['crit'] == 1]
-        # print(crit.shape)
-        for yy in crit['Close'] : fig.add_hline(y = yy, line_color="#ab63fa")
+
+        ret = highlow_ret(price)
+        fig2 = px.line(ret, title=name, markers=True)
+
+        highlow_bs(price)
+        buy = price.loc[price['b/s'] == 'buy']
+        for xx in buy.index : fig.add_vline(x = xx, line_color="#00cc96")
+        sell = price.loc[price['b/s'] == 'sell']
+        for xx in sell.index : fig.add_vline(x = xx, line_color="#ef553b")
+        for xx in buy.index : fig2.add_vline(x = xx, line_color="#00cc96")
+        for xx in sell.index : fig2.add_vline(x = xx, line_color="#ef553b")
+        for xx in buy.index : fig4.add_vline(x = xx, line_color="#00cc96")
+        for xx in sell.index : fig4.add_vline(x = xx, line_color="#ef553b")
+
+        if buy.shape[0] == sell.shape[0]:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = 0, total = {ret.iloc[-1][0]:.2f}"    
+        elif buy.shape[0]-sell.shape[0] == 1:
+            last = f"Final money : cash = {ret.iloc[-1][0]:.2f}, stocks values = {close.iloc[-1][0]:.2f}, total = {ret.iloc[-1][0]+close.iloc[-1][0]:.2f}"
+        first = f"Initial money : {close['Close'].mean()*10:.2f}"
+
+    # if 'supres_btn' == ctx.triggered_id:
+    #     #sort_values() ไม่ได้ inplace
+    #     price = supres(price)
+    #     # print(price)
+    #     fig = px.line(price['Close'], title=name, markers=True)
+    #     fig['data'][0].line.color = '#636efa'
+    #     crit = price.loc[price['crit'] == 1]
+    #     # print(crit.shape)
+    #     for yy in crit['Close'] : fig.add_hline(y = yy, line_color="#ab63fa")
 
 
     return fig, fig2, first, last, st, fig4

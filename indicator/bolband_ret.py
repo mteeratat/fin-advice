@@ -10,7 +10,6 @@ def bol_pos(price):
     for i in range(len(price['signal'])):
         # print(i)
         if state == 0 and price['signal'].iloc[i] == 1:
-            print('in')
             price['position'].iloc[i] = 1
             state = 1
         elif state == 1 and price['signal'].iloc[i] == 2:
@@ -18,7 +17,7 @@ def bol_pos(price):
             state = 0
         else:
             price['position'].iloc[i] = 0
-    print(price)
+    # print(price)
         
     return price
 
