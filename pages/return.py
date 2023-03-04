@@ -13,8 +13,9 @@ import numpy as np
 import base64
 import io
 import dash_uploader as du
+from model.randforest import test
 
-ret = register_page(__name__)
+return_page = register_page(__name__)
 
 close = pd.DataFrame()
 port = pd.DataFrame(data=[100 for i in range(100)])
@@ -34,7 +35,8 @@ layout = html.Div(children=[
     html.Div(
         children=[
             dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True, value='',),
-            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True, value='',),
+            # dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True, value='',),
+            dcc.Dropdown(options=['1m', '1h', '1d', '1wk', '1mo'], id='interval', placeholder='Interval'),
         ],
     ),
     
@@ -45,7 +47,8 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='',),
+            # dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='',),
+            dcc.Dropdown(options=['1d', '1mo', '1y', 'ytd'], id='period', placeholder='Period'),
             html.Button('Get Data', id='get_data1', n_clicks=0),
         ],
     ),
@@ -93,7 +96,8 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Simple Moving Average', href='https://www.investopedia.com/terms/s/sma.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='sma_input', debounce=True, placeholder='SMA days', value='',),
+                    # dcc.Input(id='sma_input', debounce=True, placeholder='SMA days', value='',),
+                    dcc.Dropdown(options=['3','7','14','25','60'], id='sma_input', placeholder='SMA days'),
                     html.Button('SMA', id='btn1', n_clicks=0),
                 ],
             ),
@@ -101,7 +105,8 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Exponential Moving Average', href='https://www.investopedia.com/terms/e/ema.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='ema_input', debounce=True, placeholder='EMA days', value='',),
+                    # dcc.Input(id='ema_input', debounce=True, placeholder='EMA days', value='',),
+                    dcc.Dropdown(options=['3','7','14','25','60'], id='ema_input', placeholder='EMA days'),
                     html.Button('EMA', id='btn2', n_clicks=0),
                 ],
             ),
@@ -109,8 +114,10 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Absolute Price Oscillator', href='https://www.marketvolume.com/technicalanalysis/apo.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='apo_input1', debounce=True, placeholder='shorter SMA days', value='',),
-                    dcc.Input(id='apo_input2', debounce=True, placeholder='longer SMA days', value='',),
+                    # dcc.Input(id='apo_input1', debounce=True, placeholder='shorter SMA days', value='',),
+                    # dcc.Input(id='apo_input2', debounce=True, placeholder='longer SMA days', value='',),
+                    dcc.Dropdown(options=['3','7','14','25','60'], id='apo_input1', placeholder='shorter SMA days'),
+                    dcc.Dropdown(options=['3','7','14','25','60'], id='apo_input2', placeholder='longer SMA days'),
                     html.Button('APO', id='btn5', n_clicks=0),
                 ],
             ),
@@ -118,8 +125,10 @@ layout = html.Div(children=[
                 style={'display' : 'block'}, 
                 children=[
                     dcc.Link('Bollinger Band', href='https://www.investopedia.com/terms/b/bollingerbands.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days', value='',),
+                    # dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days', value='',),
                     dcc.Input(id='boll_input2', debounce=True, placeholder='std factor', value='',),
+                    dcc.Dropdown(options=['3','7','14','25','60'], id='boll_input1', placeholder='SMA days'),
+                    # dcc.Dropdown(options=['3','7','14','25','60'], id='boll_input2', placeholder='std factor'),
                     html.Button('Boll', id='btn3', n_clicks=0),
                 ],
             ),
@@ -232,6 +241,7 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
             print('There was an error processing this file.')
         
     if 'btn1' == ctx.triggered_id:
+        # test(price)
         price = price.assign(sma=SMA(price,sma_input))
         fig = px.line(price, title=name, markers=True)
         fig['data'][0].line.color = '#636efa'
@@ -347,9 +357,9 @@ boll_input2, apo_input1, apo_input2, contents, filename, upload_btn, reset_data)
         ret = rsi_return(price)
         fig2 = px.line(ret, title=name, markers=True)
 
-        print(price)
+        # print(price)
         rsi_bs(price)
-        print(price)
+        # print(price)
         buy = price.loc[price['b/s'] == 'buy']
         for xx in buy.index : fig.add_vline(x = xx, line_color="#00cc96")
         sell = price.loc[price['b/s'] == 'sell']

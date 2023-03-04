@@ -9,7 +9,7 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 import dash_uploader as du
 
-pre = register_page(__name__)
+predict_page = register_page(__name__)
 
 close = pd.DataFrame()
 port = pd.DataFrame(data=[100 for i in range(100)])
@@ -24,7 +24,8 @@ layout = html.Div(children=[
     html.Div(
         children=[
             dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True, value='',),
-            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True, value='',),
+            # dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True, value='',),
+            dcc.Dropdown(options=['1m', '1h', '1d', '1wk', '1mo'], id='interval', placeholder='Interval'),
         ],
     ),
     
@@ -35,7 +36,8 @@ layout = html.Div(children=[
     html.Div(
         style={'display' : 'flex'}, 
         children=[
-            dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='',),
+            # dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='',),
+            dcc.Dropdown(options=['1d', '1mo', '1y', 'ytd'], id='period', placeholder='Period'),
             html.Button('Get Data', id='get_data1', n_clicks=0),
         ],
     ),
@@ -122,8 +124,8 @@ def change_model(btn1, btn2, ticker, interval, period, start, end, contents, fil
         # content_type, content_string = contents.split(',')
         # decoded = base64.b64decode(content_string)
         # filenames = io.StringIO(decoded.decode('utf-8'))
-        print(filename)
-        print(contents)
+        # print(filename)
+        # print(contents)
         try:
             if 'csv' in filename:
                 # Assume that the user uploaded a CSV file
