@@ -181,9 +181,19 @@ layout = html.Div(children=[
     Input('apo_input2', 'value'),
     Input('upload', 'contents'),
     State('upload', 'filename'),
+    ### must add button input even not using the n_clicks ###
+    Input('get_data1', 'n_clicks'),
+    Input('get_data2', 'n_clicks'),
+    Input('reset_data', 'n_clicks'),
+    Input('sma_btn', 'n_clicks'),
+    Input('ema_btn', 'n_clicks'),
+    Input('apo_btn', 'n_clicks'),
+    Input('boll_btn', 'n_clicks'),
+    Input('rsi_btn', 'n_clicks'),
+    Input('highlow_btn', 'n_clicks'),
 )
 def change_indicator(ticker, interval, period,  start, end, sma_input, ema_input, boll_input1, boll_input2, apo_input1, apo_input2, 
-                     contents, filename,):
+                     contents, filename, get_data1, get_data2, reset_data, sma_btn, ema_btn, apo_btn, boll_btn, rsi_btn, highlow_btn):
     global close, port, name
     price = close.copy()
 

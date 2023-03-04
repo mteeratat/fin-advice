@@ -66,13 +66,13 @@ layout = html.Div(children=[
         figure=fig
     ),
 
-    html.Button('Download File (CSV)', id='download_btn'),
-    dcc.Download(id='download'),
+    html.Button('Download File (CSV)', id='download_btn2'),
+    dcc.Download(id='download2'),
 
     html.Div(children='model'),
 
-    html.Button('ARIMA_backtest', id='btn1', n_clicks=0),
-    html.Button('ARIMA_forecast', id='btn2', n_clicks=0),
+    html.Button('ARIMA_backtest', id='arima_bt_btn', n_clicks=0),
+    html.Button('ARIMA_forecast', id='arima_fc_btn', n_clicks=0),
     html.Button('model 3', id='btn3', n_clicks=0),
 ])
 
@@ -87,8 +87,11 @@ layout = html.Div(children=[
     Input('get_data2', 'n_clicks'),
     Input('upload', 'contents'),
     State('upload', 'filename'),
+    Input('reset_data', 'n_clicks'),
+    Input('arima_bt_btn', 'n_clicks'),
+    Input('arima_fc_btn', 'n_clicks'),
 )
-def change_model(ticker, interval, period, start, end, contents, filename,):
+def change_model(ticker, interval, period, start, end, contents, filename, get_data1, get_data2, reset_data, arima_bt_btn, arima_fc_btn):
     global close, port, name
 
     # print(ctx.triggered_id)
@@ -141,7 +144,7 @@ def change_model(ticker, interval, period, start, end, contents, filename,):
             print(e)
             print('There was an error processing this file.')
 
-    if 'btn1' == ctx.triggered_id:
+    if 'arima_bt_btn' == ctx.triggered_id:
         # index = int(close.shape[0]*9/10)
         # train = close.iloc[:][:index]
         # test = close.iloc[:][index:]
@@ -157,13 +160,14 @@ def change_model(ticker, interval, period, start, end, contents, filename,):
 
         #### backtest #####
         temp = close[['Close']]
+        # temp = close[['Close']].asfreq('d').ffill()
         temp['diff'] = temp['Close'] - temp['Close'].shift(1)
         # temp['forecast'] = pickled_model.forecast(5)
+        # print(type(close.index[0]))
         # print(close.index[0])
-        # print(close.index[-1])
-        # print(close)
-        temp['forecast'] = pickled_model.predict(start=close.index[0],end=close.index[-1])
+        temp['forecast'] = pickled_model.predict(start=close.index[0], end=close.index[-1])
         index = len(close) - len(temp['forecast'].dropna())
+        # print(temp)
 
         scaler = StandardScaler()
         # f = temp[['diff']].dropna()
@@ -191,11 +195,11 @@ def change_model(ticker, interval, period, start, end, contents, filename,):
 
         fig = px.line(pred, title='arima backtest', markers=True)
 
-    if 'btn2' == ctx.triggered_id:
+    if 'arima_fc_btn' == ctx.triggered_id:
 
         pickled_model = pickle.load(open('model\\arima_trained_forecast.pkl', 'rb'))
 
-        forecast = pickled_model.forecast(5)
+        forecast = pickled_model.forecast(20)
         # print(forecast)
         pred = pd.concat([close,forecast])
         pred.columns = ['Close','predict']
@@ -204,6 +208,14 @@ def change_model(ticker, interval, period, start, end, contents, filename,):
         fig = px.line(pred, title='arima forecast', markers=True)
     
     return fig
+
+@callback(
+    Output('download2', 'data'),
+    Input('download_btn2', 'n_clicks'),
+)
+def download_csv(download_btn):
+    if 'download_btn2' == ctx.triggered_id:
+        return dcc.send_data_frame(close.to_csv, f"{name}.csv")
 
 # def arimamodel(timeseriesarray):
 #     autoarima_model = pmd.auto_arima(timeseriesarray, 
