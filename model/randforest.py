@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 import numpy as np
 import yfinance as yf
+from datetime import timedelta
 
 def test():
     
@@ -14,14 +15,20 @@ def test():
 
     tic = yf.Ticker('ptt.bk')
     data = tic.history(interval='1d', period='1y')
+    # data = data.ffill()
     # print(data)
 
-    X = data[['Open','Close','High','Low','Volume']].shift(-1).dropna()
+    X = data[['Open','Close','High','Low','Volume']].iloc[:-1]
     # X = data[['Close']].shift(-1).dropna()
-    y = data[['Close']].iloc[:-1]
-    print(X)
+    y = data[['Close']].shift(1).dropna()
+    # print(X)
+    # print(y)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1,)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, shuffle=False)
+    X_train = X.iloc[:int(len(data)*9/10)]
+    X_test = X.iloc[int(len(data)*9/10):]
+    y_train = y.iloc[:int(len(data)*9/10)]
+    y_test = y.iloc[int(len(data)*9/10):] 
 
     # data.index = data['Date']
     # data.plot()
@@ -42,20 +49,48 @@ def test():
     # print(X_train)
     # print(y_train['crit'])
 
+    ## backtest ##
     # rf = RandomForestClassifier()
     rf = RandomForestRegressor(n_estimators=100, random_state=42)
     rf.fit(X_train, y_train)
 
+    # print(X_test)
+    X_test.index = X_test.index
+    # print(X_test)
     y_pred = rf.predict(X_test)
-    pred = pd.Series(y_pred)
+    pred = pd.DataFrame(y_pred)
+    # print(pred)
+    pred.columns = ['Forecast']
     pred.index = y_test.index
 
-    # print(y_test)
-    # print(pred)
+    print(y_test)
+    print(pred)
 
     y_test.plot()
     pred.plot()
     plt.show()
+
+    # ## forecast ##
+    # X_test = data[['Open','Close','High','Low','Volume']].iloc[-5:]
+    # print(X_test)
+    # y_pred = rf.predict(X_test)
+    # pred = pd.Series(y_pred)
+    # # pred.columns = ['Close']
+    # tmr = y_test.index[-1] + timedelta(days=3)
+    # print(tmr)
+    # print(type(tmr))
+    # ind = y_test.index[-5:]
+    # print(type(ind))
+    # print(type(ind[0]))
+    # print(ind.append(pd.DatetimeIndex([tmr])))
+
+    # pred.index = ind[1:].append(pd.DatetimeIndex([tmr]))
+    # print(pred)
+
+    # y_test.plot()
+    # # plt.show()
+    # pred.plot()
+    # plt.show()
 
     # result = rf.predict(X_test)
     # print(X_test)
@@ -79,8 +114,15 @@ def test():
     mape = mean_absolute_percentage_error(y_test, pred)
     mse = mean_squared_error(y_test, pred)
     rmse = np.sqrt(mse)
+    corr = y_test['Close'].corr(pred['Forecast'])
 
     print(f'mae = {mae}')
     print(f'mape = {mape}')
     print(f'mse = {mse}')
     print(f'rmse = {rmse}')
+    print(f'corr = {corr}')
+
+    # mae = 0.02025257644653351
+    # mape = 0.0005701874408488805
+    # mse = 0.0026427504663121626
+    # rmse = 0.051407688785940986

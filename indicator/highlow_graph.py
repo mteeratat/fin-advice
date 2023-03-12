@@ -40,4 +40,4 @@ def highlow(price):
     # price = price.sort_values(by=['Date'])
     # price['crit'] = temp['crit']
 
-    return temp
+    return temp  

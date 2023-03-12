@@ -241,10 +241,16 @@ def change_indicator(ticker, interval, period,  start, end, sma_input, ema_input
 
                 data = pd.read_csv(filenames)
                 data.index = data['Date']
-                close = data[['Close']]
+                close = data[['Close','predict']]
 
                 name = filename
                 fig = px.line(close, title=name, markers=True)
+                
+                lenp = len(close['predict'].dropna())
+                print(lenp)
+                close['Close'].iloc[-lenp:] = close['predict'].dropna()
+                close = close.drop(['predict'], axis=1)
+                print(close)
             else:
                 print('Error: Only CSV files are supported')
                 
