@@ -9,6 +9,7 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error
 import numpy as np
+from datetime import timedelta
 
 predict_page = register_page(__name__)
 
@@ -100,6 +101,7 @@ layout = html.Div( children=[
         children=[
             html.Button('ARIMA_backtest', id='arima_bt_btn', n_clicks=0),
             html.Button('ARIMA_forecast', id='arima_fc_btn', n_clicks=0),
+            html.Button('RandomForest_forecast', id='rf_fc_btn', n_clicks=0),
         ]
     ),
 
@@ -121,8 +123,9 @@ layout = html.Div( children=[
     Input('reset_data', 'n_clicks'),
     Input('arima_bt_btn', 'n_clicks'),
     Input('arima_fc_btn', 'n_clicks'),
+    Input('rf_fc_btn', 'n_clicks'),
 )
-def change_model(ticker, interval, period, start, end, contents, filename, get_data1, get_data2, reset_data, arima_bt_btn, arima_fc_btn):
+def change_model(ticker, interval, period, start, end, contents, filename, get_data1, get_data2, reset_data, arima_bt_btn, arima_fc_btn, rf_fc_btn):
     global close, port, name, state, pred
 
     evall = ''
@@ -286,6 +289,31 @@ def change_model(ticker, interval, period, start, end, contents, filename, get_d
         pred.index = pred['Date']
         pred = pred.drop(['Date'], axis=1)
         # print(pred)
+    
+    if 'rf_fc_btn' == ctx.triggered_id:
+
+        X_test = close.iloc[-5:]
+
+        pickled_model = pickle.load(open(f'model\\{ticker}_random_forest.pkl', 'rb'))
+
+        y_pred = pickled_model.predict(X_test)
+        forecast = pd.Series(y_pred)
+        fut = []
+        for i in range(5):
+            tmr = close.index[-1] + timedelta(days=3+i)
+            fut.append(tmr)
+        forecast.index = fut
+        print(forecast)
+        pred = pd.concat([close,forecast])
+        pred.columns = ['Close','predict']
+        print(pred)
+
+        fig = px.line(pred, title='Random Forest forecast', markers=True)
+
+        pred['Date'] = pred.index
+        pred.index = pred['Date']
+        pred = pred.drop(['Date'], axis=1)
+    
 
     return fig, evall
 
