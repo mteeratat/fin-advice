@@ -5,20 +5,27 @@ app = Dash(__name__, use_pages=True)
 app.layout = html.Div(
     children=[
         html.H1(
+            className='center',
             children=[
-                dcc.Link(style={'text-decoration': 'none', 'color': 'black'},
-                        children='Fin-Advice', href=page_registry['pages.home']['relative_path'],
+                dcc.Link(
+                    className='pure-text',
+                    children='Fin-Advice', 
+                    href=page_registry['pages.home']['relative_path'],
                 )
-            ], 
-            style={'display':'flex', 'justify-content':'center'},
+            ],
         ),
-        html.H2(children='financial advising', style={'display':'flex', 'justify-content':'center'}),
-        html.Div(style={'display':'flex', 'justify-content':'space-around'},
+        html.H3(className='center', children='Financial Advisor',),
+        html.Div(className='div-header-btn',
             children=[
-                html.Div(children=
-                    dcc.Link(
-                        f"{page['name']} - {page['path']}", href=page['relative_path']
-                    )
+                dcc.Link(className='pure-text header-link',
+                    children=[
+                        html.Button(className='header-btn button-30',
+                            children=[
+                                f"{page['name']}"
+                            ],
+                        ),
+                    ],
+                    href=page['relative_path'],
                 )
                 for page in page_registry.values()
             ]

@@ -19,59 +19,71 @@ return_page = register_page(__name__)
 close = pd.DataFrame()
 port = pd.DataFrame(data=[100 for i in range(100)])
 
-fig = px.line(port, title='ticker', markers=True)
-fig2 = px.line(port, title='ticker', markers=True)
-fig4 = px.line(port, title='ticker', markers=True)
+fig = px.line(port, title='Ticker', markers=True)
+fig2 = px.line(port, title='Ticker', markers=True)
+fig4 = px.line(port, title='Ticker', markers=True)
 
 #color: https://plotly.com/python/discrete-color/
 #display: https://developer.mozilla.org/en-US/docs/Web/CSS/display
 
-name = 'ticker'
+name = 'Ticker'
 
 layout = html.Div(children=[
-    html.H1(children='Return'),
+    html.H1(className='center', children='Return'),
 
-    html.Div(
+    html.Div(className='center',
         children=[
-            dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True, value='',),
+            dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True, value='', style={'flex': 0.1},),
             # dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True, value='',),
-            dcc.Dropdown(options=['1m', '1h', '1d', '1wk', '1mo'], id='interval', placeholder='Interval'),
+            dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup', style={'textAlign': 'center','font-size':'0.7vw'}),
         ],
     ),
+
+    html.P(),
     
-    dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup',style={'textAlign': 'center','font-size':'0.7vw'}),
+    html.Div(
+        children=[
+            dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', value='', style={'flex': 0.2}),
+            # dcc.Dropdown(options=['1d', '1wk', '1mo'], id='interval', placeholder='Interval: time between each period', style={'flex': 0.25},),
+        ],
+        style={'display': 'flex', 'justify-content': 'center'},
+    ),
 
     html.P(),
 
     html.Div(
-        style={'display' : 'flex'}, 
+        style={'display' : 'flex', 'justify-content': 'center'}, 
         children=[
-            # dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='',),
-            dcc.Dropdown(options=['1d', '1mo', '1y', 'ytd'], id='period', placeholder='Period'),
-            html.Button('Get Data', id='get_data1', n_clicks=0),
+            dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='', style={'flex': 0.2}),
+            # dcc.Dropdown(options=['6mo', '1y', '2y', '3y'], id='period', placeholder='Period: when to get data backward from today', style={'flex': 0.25},),
+            html.Button(className='button-80', children='Get Data', id='get_data1', n_clicks=0),
         ],
     ),
 
-    html.P('or'),
+    html.P(className='center', children='or'),
     
-    html.Div(
-        style={'display' : 'flex'}, 
+    html.Div(className='center',
         children=[
             dcc.Input(id='start', debounce=True, placeholder='start:YYYY-MM-DD', value='',),
             dcc.Input(id='end', debounce=True, placeholder='end:YYYY-MM-DD', value='',),
-            html.Button('Get Data', id='get_data2', n_clicks=0),
+            html.Button(className='button-80', children='Get Data', id='get_data2', n_clicks=0),
         ],
     ),
 
-    html.P('or'),
+    html.P(className='center', children='or'),
 
     # dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
-    html.Button(id='upload_btn', children=dcc.Upload(id='upload', children='Upload File (CSV)')),
+    html.Div(className='center',
+        children=html.Button(className='button-80', id='upload_btn', children=dcc.Upload(id='upload', children='Upload File (CSV)')),
+    ),
+    
     # html.Div(id='upload_output', children=''),
 
-    html.P('or'),
+    html.P(className='center', children='or'),
 
-    html.Button('Reset Data', id='reset_data', n_clicks=0),
+    html.Div(className='center',
+        children=html.Button(className='button-80', children='Reset Data', id='reset_data', n_clicks=0),
+    ),
 
     dcc.Graph(
         id='example-graph',
@@ -81,83 +93,92 @@ layout = html.Div(children=[
     dcc.Graph(
         id='example-graph4',
         figure=fig4,
-        style={'display' : 'none'},
+        style={'display':'none'},
     ),
 
-    html.Button('Download File (CSV)', id='download_btn'),
-    dcc.Download(id='download'),
+    html.Div(className='center',
+        children=[
+            html.Button(className='button-80', children='Download File (CSV)', id='download_btn'),
+            dcc.Download(id='download'),
+        ],
+    ),
+
+    html.P(),
 
     html.Div(
         id='indicator',
-        style={'display' : 'block'}, 
+        className='div-header-btn', style={'justify-content':'space-evenly'},
         children=[
             html.Div(
-                style={'display' : 'block'}, 
+                style={'display':'grid'}, 
                 children=[
                     dcc.Link('Simple Moving Average', href='https://www.investopedia.com/terms/s/sma.asp',style={'textAlign': 'center','font-size':'vw'}),
                     # dcc.Input(id='sma_input', debounce=True, placeholder='SMA days', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='sma_input', placeholder='SMA days'),
-                    html.Button('SMA', id='sma_btn', n_clicks=0),
+                    html.Button(className='button-80 button', children='SMA', id='sma_btn', n_clicks=0),
                 ],
             ),
             html.Div(
-                style={'display' : 'block'}, 
+                style={'display':'grid'}, 
                 children=[
                     dcc.Link('Exponential Moving Average', href='https://www.investopedia.com/terms/e/ema.asp',style={'textAlign': 'center','font-size':'vw'}),
                     # dcc.Input(id='ema_input', debounce=True, placeholder='EMA days', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='ema_input', placeholder='EMA days'),
-                    html.Button('EMA', id='ema_btn', n_clicks=0),
+                    html.Button(className='button-80 button', children='EMA', id='ema_btn', n_clicks=0),
                 ],
             ),
             html.Div(
-                style={'display' : 'block'}, 
+                style={'display':'grid'}, 
                 children=[
                     dcc.Link('Absolute Price Oscillator', href='https://www.marketvolume.com/technicalanalysis/apo.asp',style={'textAlign': 'center','font-size':'vw'}),
                     # dcc.Input(id='apo_input1', debounce=True, placeholder='shorter SMA days', value='',),
                     # dcc.Input(id='apo_input2', debounce=True, placeholder='longer SMA days', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='apo_input1', placeholder='shorter SMA days'),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='apo_input2', placeholder='longer SMA days'),
-                    html.Button('APO', id='apo_btn', n_clicks=0),
+                    html.Button(className='button-80 button', children='APO', id='apo_btn', n_clicks=0),
                 ],
             ),
             html.Div(
-                style={'display' : 'block'}, 
+                style={'display':'grid'}, 
                 children=[
                     dcc.Link('Bollinger Band', href='https://www.investopedia.com/terms/b/bollingerbands.asp',style={'textAlign': 'center','font-size':'vw'}),
                     # dcc.Input(id='boll_input1', debounce=True, placeholder='SMA days', value='',),
                     dcc.Input(id='boll_input2', debounce=True, placeholder='std factor', value='',),
                     dcc.Dropdown(options=['3','7','14','25','60'], id='boll_input1', placeholder='SMA days'),
                     # dcc.Dropdown(options=['3','7','14','25','60'], id='boll_input2', placeholder='std factor'),
-                    html.Button('Boll', id='boll_btn', n_clicks=0),
+                    html.Button(className='button-80 button', children='Boll', id='boll_btn', n_clicks=0),
                 ],
             ),
             html.Div(
-                style={'display' : 'block'}, 
+                style={'display':'grid'}, 
                 children=[
                     dcc.Link('RSI', href='https://www.investopedia.com/terms/r/rsi.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    html.Button('RSI', id='rsi_btn', n_clicks=0,),
+                    html.Button(className='button-80 button', children='RSI', id='rsi_btn', n_clicks=0,),
                 ],
             ),
             html.Div(
-                style={'display' : 'block'}, 
+                style={'display':'grid', 'justify-items':'center', 'justify-content':'center'}, 
                 children=[
-                    dcc.Link('RSI', href='https://www.investopedia.com/terms/r/rsi.asp',style={'textAlign': 'center','font-size':'vw'}),
-                    html.Button('peak value', id='highlow_btn', n_clicks=0,),
+                    dcc.Link('Best Case', href='https://www.investopedia.com/terms/r/rsi.asp',style={'textAlign': 'center','font-size':'vw'}),
+                    html.Button(className='button-80 button', children='Peak Value', id='highlow_btn', n_clicks=0, style={'justify-self':'center'},),
                 ],
             ),
             # html.Button('sup-res', id='supres_btn', n_clicks=0, style={'display' : 'inline-block'}, ),
             html.Button('sup-res', id='supres_btn', n_clicks=0, style={'display' : 'none'}, ),
         ]
     ),
-    
-    html.P(id='init', title='Initial money', children=''),
+    html.Div(className='center',
+        children=html.H3(className='money', id='init', title='Initial money', children=''),
+    ),   
 
     dcc.Graph(
         id='example-graph2',
         figure=fig2
     ),
 
-    html.P(id='final', title='Final money', children=''),
+    html.Div(className='center',
+        children=html.H3(className='money', id='final', title='Final money', children=''),
+    )
 
 ])
 

@@ -19,7 +19,7 @@ pred = pd.DataFrame(data=[100 for i in range(100)])
 
 fig = px.line(port, title='Ticker', markers=True)
 
-name = '{Ticker}'
+name = 'Ticker'
 
 state = 0
 
@@ -27,13 +27,13 @@ layout = html.Div( children=[
     html.H1(children='Predict', style={'display': 'flex', 'justify-content': 'center'}),
 
     html.Div(
+        className='center',
         children=[
             # dcc.Input(id='ticker', debounce=True, placeholder='Ticker', required=True, value='', style={'flex': 'initial'},),
             dcc.Dropdown(options=['ADVANC','CPN','PTT'], id='ticker', placeholder='Ticker', style={'flex': 0.1},),
             # dcc.Input(id='interval', debounce=True, placeholder='Interval:1m,1h,1d,1wk,1mo', required=True, value='',),
-            dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup', style={'textAlign': 'center','font-size':'0.7vw'}),
+            # html.P(dcc.Link('Find tickers from yfinance', href='https://finance.yahoo.com/lookup', style={'vertical-align':'middle', 'text-align': 'center','font-size':'0.7vw'}),)
         ],
-        style={'display': 'flex', 'justify-content': 'center'},
     ),
 
     html.P(),
@@ -52,30 +52,26 @@ layout = html.Div( children=[
         children=[
             # dcc.Input(id='period', debounce=True, placeholder='Period:1d,1mo,1y,ytd,max', value='',),
             dcc.Dropdown(options=['6mo', '1y', '2y', '3y'], id='period', placeholder='Period: when to get data backward from today', style={'flex': 0.25},),
-            html.Button('Get Data', id='get_data1', n_clicks=0),
+            html.Button(className='button-80', children='Get Data', id='get_data1', n_clicks=0),
         ],
     ),
-
-    html.P('or', style={'display': 'flex', 'justify-content': 'center'}),
     
     html.Div(
-        style={'display' : 'flex', 'justify-content': 'center'}, 
+        style={'display' : 'none', 'justify-content': 'center'}, 
         children=[
             dcc.Input(id='start', debounce=True, placeholder='start:YYYY-MM-DD', value='',),
             dcc.Input(id='end', debounce=True, placeholder='end:YYYY-MM-DD', value='',),
-            html.Button('Get Data', id='get_data2', n_clicks=0),
+            html.Button(children='Get Data', id='get_data2', n_clicks=0),
         ],
     ),
-
-    # html.P('or'),
 
     # dcc.Upload(id='upload', children=html.Button('Upload File (CSV)', id='upload_btn')),
     html.Button(id='upload_btn', children=dcc.Upload(id='upload', children='Upload File (CSV)'), style={'display' : 'none'}),
 
-    html.P('or', style={'display': 'flex', 'justify-content': 'center'}),
+    html.P(className='center', children='or'),
 
-    html.Div(style={'display': 'flex', 'justify-content': 'center'},
-        children=[html.Button('Reset Data', id='reset_data', n_clicks=0,),],
+    html.Div(className='center',
+        children=[html.Button(className='button-80', children='Reset Data', id='reset_data', n_clicks=0,),],
     ),
     
     dcc.Graph(
@@ -83,25 +79,25 @@ layout = html.Div( children=[
         figure=fig
     ),
 
-    html.Div(style={'display': 'flex', 'justify-content': 'center'},
+    html.Div(className='center',
         children=[
             html.P(id='eval'),
         ]
     ),
 
-    html.Div(style={'display': 'flex', 'justify-content': 'center'},
+    html.Div(className='center',
         children=[
-            html.Button('Download File (CSV)', id='download_btn2', style={'display': 'flex', 'justify-content': 'center'}),
+            html.Button(className='button-80', children='Download File (CSV)', id='download_btn2'),
             dcc.Download(id='download2'),
         ],
     ),
     
-    html.H2('model', style={'display': 'flex', 'justify-content': 'center'}),
+    html.H2('MODEL', style={'display': 'flex', 'justify-content': 'center'}),
     html.Div(style={'display': 'flex', 'justify-content': 'center'},
         children=[
-            html.Button('ARIMA_backtest', id='arima_bt_btn', n_clicks=0),
-            html.Button('ARIMA_forecast', id='arima_fc_btn', n_clicks=0),
-            html.Button('RandomForest_forecast', id='rf_fc_btn', n_clicks=0),
+            html.Button(className='button-80', children='ARIMA_backtest', id='arima_bt_btn', n_clicks=0),
+            html.Button(className='button-80', children='ARIMA_forecast', id='arima_fc_btn', n_clicks=0),
+            html.Button(className='button-80 ', children='RandomForest_forecast', id='rf_fc_btn', n_clicks=0),
         ]
     ),
 
